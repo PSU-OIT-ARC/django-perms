@@ -48,9 +48,9 @@ class DecoratorContainer:
     """
     pass
 
-# this contains a mapping between permission function __names__ and the
-# permission function object itself
-perms = {}
+# stores all the names of the perm functions so we know if there is a name
+# collision
+perm_names = set()
 
 # this dict is used to store meta information about a permission (like which
 # model class it is for). The key is the permission function __name__, and the
@@ -59,11 +59,11 @@ perm_attributes = defaultdict(dict)
 
 def _register(perm_function, model=None):
     # make sure this permission function isn't overriding one already defined
-    if perm_function.__name__ in perms:
+    if perm_function.__name__ in perm_names:
         raise ValueError("The permission function '%s' is already defined" % perm_function.__name__)
 
     # save the permission function
-    perms[perm_function.__name__] = perm_function
+    perm_names.add(perm_function.__name__)
 
     # if a model class is defined for this permission function, we need to save
     # that information
