@@ -15,12 +15,12 @@ def permission(permission_function=None, model=None):
     creates a decorator for it, which can be used on a Django view. This
     function can be used in two ways:
 
-    @register
+    @permission
     def can_do_something(user):
 
     or
 
-    @register(model=Car)
+    @permission(model=Car)
     def can_do_something_to_a_car(user, car):
 
     In the latter case, when can_do_something_to_a_car is used as a Django view
