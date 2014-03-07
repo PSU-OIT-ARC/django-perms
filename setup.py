@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="django-perms",
-    version='0.0.3',
+    version='0.0.5',
     url='https://github.com/PSU-OIT-ARC/django-perms',
     author='Matt Johnson',
     author_email='mdj2@pdx.edu',
