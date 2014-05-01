@@ -110,21 +110,15 @@ def decorate(view_function, perm_function):
         # are we dealing with a perm function that has an associated model class?
         model = perm_attributes[perm_name].get("model", None)
         if model is not None:
-            copy_of_kwargs = kwargs.copy()
             # try to get the model_pk either as an arg, or kwarg
             try:
                 model_pk = args[1]
             except IndexError:
                 params = view_function.func_code.co_varnames
                 model_pk = kwargs[params[1]]
-                copy_of_kwargs.pop(params[1])
 
             model_obj = get_object_or_404(model, pk=model_pk)
-            # we want to pass any extra args and kwargs to the permission
-            # function (except for the first parameter (which would be the
-            # request) and the second parameter, which is assumed to be the
-            # PK)
-            test = perm_function(user, model_obj, *args[2:], **copy_of_kwargs)
+            test = perm_function(user, model_obj)
         else:
             test = perm_function(user, *args[1:], **kwargs)
 
