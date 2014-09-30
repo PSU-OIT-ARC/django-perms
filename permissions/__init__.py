@@ -83,52 +83,62 @@ def _register(perm_function, model=None):
     # create an attribute on the module.decorators attribute, named after the
     # permission function, that returns the permission function usable as a
     # decorator on a Django view function
-    setattr(perm_module.decorators, perm_function.__name__, lambda view_function: decorate(view_function, perm_function))
+    setattr(perm_module.decorators, perm_function.__name__, lambda *args, **kwargs: decorate(*args, perm_function=perm_function, **kwargs))
 
     # now add the function to our template tag filters
     # only perm functions with 1 or 2 arguments can be django filter tags 
     if len(inspect.getargspec(perm_function).args) <= 2:
         template_register.filter(perm_function.__name__, perm_function)
 
-def decorate(view_function, perm_function):
+def decorate(*args, **kwargs):
     """
     This decorates a Django view function. When the view function is called, it
     fetches the user object out of the request (which is assumed to be the
     first parameter to the view), and runs the perm_function, to see if the
     view can be accessed.
     """
-    def wrapper(*args, **kwargs):
-        # the request is always assumed to be the first argument to a Django view
-        request = args[0]
-        user = request.user
-        perm_name = perm_function.__name__
+    def closure(view_function, perm_function, field="pk"):
+        def wrapper(*args, **kwargs):
+            # the request is always assumed to be the first argument to a Django view
+            request = args[0]
+            user = request.user
+            perm_name = perm_function.__name__
 
-        # anons have no permissions
-        if user.is_anonymous():
-            return login_required(lambda *args, **kwargs: 1)(request)
+            # anons have no permissions
+            if user.is_anonymous():
+                return login_required(lambda *args, **kwargs: 1)(request)
 
-        # are we dealing with a perm function that has an associated model class?
-        model = perm_attributes[perm_name].get("model", None)
-        if model is not None:
-            # try to get the model_pk either as an arg, or kwarg
-            try:
-                model_pk = args[1]
-            except IndexError:
-                params = view_function.func_code.co_varnames
-                model_pk = kwargs[params[1]]
+            # are we dealing with a perm function that has an associated model class?
+            model = perm_attributes[perm_name].get("model", None)
+            if model is not None:
+                # try to get the model_pk either as an arg, or kwarg
+                try:
+                    model_pk = args[1]
+                except IndexError:
+                    params = view_function.func_code.co_varnames
+                    model_pk = kwargs[params[1]]
 
-            model_obj = get_object_or_404(model, pk=model_pk)
-            test = perm_function(user, model_obj)
-        else:
-            test = perm_function(user, *args[1:], **kwargs)
+                model_obj = get_object_or_404(model, **{field: model_pk})
+                test = perm_function(user, model_obj)
+            else:
+                test = perm_function(user, *args[1:], **kwargs)
 
-        if test:
-            return view_function(*args, **kwargs)
-        else:
-            # tack on the permission name to the request for better error
-            # handling since Django doesn't give you access to the
-            # PermissionDenied exception object
-            request.permission_name = perm_name
-            raise PermissionDenied("You need the permission %s" % perm_name)
+            if test:
+                return view_function(*args, **kwargs)
+            else:
+                # tack on the permission name to the request for better error
+                # handling since Django doesn't give you access to the
+                # PermissionDenied exception object
+                request.permission_name = perm_name
+                raise PermissionDenied("You need the permission %s" % perm_name)
 
-    return wrapper
+        return wrapper
+
+    if len(args) == 1 and callable(args[0]):
+        # the caller is using this decorator without arguments. ie @can_do_something
+        return closure(*args, **kwargs)
+    else:
+        # the caller is using this decorator with arguments ie @can_do_something(field="foo")
+        perm_function = kwargs.pop("perm_function")
+        field = kwargs.pop("field")
+        return lambda view_function: closure(view_function, perm_function, field)

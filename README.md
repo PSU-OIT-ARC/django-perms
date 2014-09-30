@@ -59,6 +59,13 @@ def create(request):
 def edit(request, widget_id):
     widget = get_object_or_404(Widget, pk=widget_id)
     return HttpResponse("You can edit %s" % str(widget))
+
+# if you want to lookup the widget by its name field instead of the default,
+# the pk, add a field argument to the decorator
+@decorators.can_edit_widget(field="name")
+def edit(request, name):
+    widget = get_object_or_404(Widget, name=name)
+    return HttpResponse("You can edit %s" % str(widget))
 ```
 
 In your templates, you can do:
