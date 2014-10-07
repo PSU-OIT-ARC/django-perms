@@ -12,5 +12,7 @@ setup(
     zip_safe=False,
     classifiers=[
         'Framework :: Django',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
     ],
 )

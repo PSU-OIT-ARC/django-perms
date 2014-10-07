@@ -1,7 +1,7 @@
 import sys
 from functools import wraps
 import inspect
-from collections import defaultdict
+from collections import defaultdict, Callable
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
@@ -115,7 +115,7 @@ def decorate(*args, **kwargs):
                 try:
                     model_pk = args[1]
                 except IndexError:
-                    params = view_function.func_code.co_varnames
+                    params = view_function.__code__.co_varnames
                     model_pk = kwargs[params[1]]
 
                 model_obj = get_object_or_404(model, **{field: model_pk})
@@ -134,7 +134,7 @@ def decorate(*args, **kwargs):
 
         return wrapper
 
-    if len(args) == 1 and callable(args[0]):
+    if len(args) == 1 and isinstance(args[0], Callable):
         # the caller is using this decorator without arguments. ie @can_do_something
         return closure(*args, **kwargs)
     else:
