@@ -1,11 +1,13 @@
-import sys
-from functools import wraps
 import inspect
+import sys
 from collections import defaultdict, Callable
-from django.core.exceptions import PermissionDenied
+
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+
 from .templatetags.permissions import register as template_register
+
 
 __all__ = ['permission']
 
