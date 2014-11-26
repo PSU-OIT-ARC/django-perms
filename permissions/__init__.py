@@ -11,7 +11,7 @@ from .templatetags.permissions import register as template_register
 
 __all__ = ['permission']
 
-def permission(permission_function=None, model=None):
+def permission(permission_function=None, model=None, allow_anonymous=False):
     """
     This decorator registers a permission function for use in templates, and
     creates a decorator for it, which can be used on a Django view. This
@@ -32,13 +32,13 @@ def permission(permission_function=None, model=None):
     """
     if permission_function:
         # this is just a basic permission_function registration
-        _register(permission_function)
+        _register(permission_function, allow_anonymous=allow_anonymous)
         return permission_function
     elif model:
         # we were passed a model, so we need to decorate based on that
         def wrapper(perm_fn):
             # register the permission
-            _register(perm_fn, model=model)
+            _register(perm_fn, model=model, allow_anonymous=allow_anonymous)
             return perm_fn
         return wrapper
 
@@ -59,7 +59,7 @@ perm_names = set()
 # value is a dict of meta information
 perm_attributes = defaultdict(dict)
 
-def _register(perm_function, model=None):
+def _register(perm_function, model=None, allow_anonymous=False):
     # make sure this permission function isn't overriding one already defined
     if perm_function.__name__ in perm_names:
         raise ValueError("The permission function '%s' is already defined" % perm_function.__name__)
@@ -71,6 +71,8 @@ def _register(perm_function, model=None):
     # that information
     if model:
         perm_attributes[perm_function.__name__]['model'] = model
+
+    perm_attributes[perm_function.__name__]['allow_anonymous'] = allow_anonymous
 
     # here is where some magic happens. We want to create a `decorators`
     # attribute on the module that defined this permission function. This
@@ -105,9 +107,10 @@ def decorate(*args, **kwargs):
             request = args[0]
             user = request.user
             perm_name = perm_function.__name__
+            allow_anonymous =perm_attributes[perm_name].get("model", None)
 
             # anons have no permissions
-            if user.is_anonymous():
+            if not allow_anonymous and user.is_anonymous():
                 return login_required(lambda *args, **kwargs: 1)(request)
 
             # are we dealing with a perm function that has an associated model class?
