@@ -68,7 +68,7 @@ class PermissionsRegistry:
 
         name = name if name is not None else perm_func.__name__
         if name == 'register':
-            raise PermissionsError('register cannot be used a permission name')
+            raise PermissionsError('register cannot be used as a permission name')
         elif name in self.__registry and not replace:
             raise DuplicatePermissionError(name)
 
