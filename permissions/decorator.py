@@ -90,7 +90,7 @@ def _register(perm_function, model=None, allow_anonymous=False):
     setattr(perm_module.decorators, perm_function.__name__, lambda *args, **kwargs: decorate(*args, perm_function=perm_function, **kwargs))
 
     # now add the function to our template tag filters
-    # only perm functions with 1 or 2 arguments can be django filter tags 
+    # only perm functions with 1 or 2 arguments can be django filter tags
     if len(inspect.getargspec(perm_function).args) <= 2:
         template_register.filter(perm_function.__name__, perm_function)
 
