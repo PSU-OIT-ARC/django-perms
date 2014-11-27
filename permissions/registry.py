@@ -65,6 +65,8 @@ class PermissionsRegistry:
         log.debug('Registered permission: {0}'.format(name))
         return perm_func
 
+    __call__ = register
+
     def __getattr__(self, name):
         try:
             return self.__registry[name].view_decorator
