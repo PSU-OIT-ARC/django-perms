@@ -41,6 +41,13 @@ def can_create_widget(user):
 @permission(model=Widget)
 def can_edit_widget(user, widget):
     ...
+
+@permission(model=Widget, allow_anonymous=True)
+def can_view_widget(user, widget):
+    if user.is_anonymous():
+        ... allow access to public widgets
+    else:
+        ... allow access to public widgets and user's widgets
 ```
 
 Permission functions that take a single argument (the user object), can use the simple `@permission` decorator. Permission functions that take a second argument *must* specify the model class that the second argument to the permission function is expected to be.
@@ -91,4 +98,4 @@ In the more complicated `@permission(model=Widget)` case, a Django template filt
 
 When a PermissionDenied error is raised, the request object gets a `permission_name` attribute containing the permission function's name.
 
-Anonymous users will be sent to the login page (the permission decorators only work on logged in users).
+Anonymous users will be sent to the login page unless `allow_anonymous=True` is passed to `@permission`.
