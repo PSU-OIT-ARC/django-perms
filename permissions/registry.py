@@ -59,7 +59,7 @@ class PermissionsRegistry:
 
         """
         if perm_func is None:
-            return lambda perm_func_: self.register(perm_func_, model, allow_anonymous, name)
+            return lambda perm_func_: self.register(perm_func_, model, allow_anonymous, name, replace)
 
         name = name if name is not None else perm_func.__name__
         if name == 'register':
