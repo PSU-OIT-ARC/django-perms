@@ -48,6 +48,16 @@ class PermissionsRegistry:
         self.__registry = dict()
 
     def register(self, perm_func=None, model=None, allow_anonymous=False, name=None, replace=False):
+        """Register a permission.
+
+        This is typically used as a decorator::
+
+            permissions = PermissionsRegistry()
+            @permissions.register
+            def can_do_something(user):
+                ...
+
+        """
         if perm_func is None:
             return lambda perm_func_: self.register(perm_func_, model, allow_anonymous, name)
 
