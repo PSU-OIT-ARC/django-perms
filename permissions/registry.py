@@ -122,7 +122,8 @@ class PermissionsRegistry:
                     # exception object.
                     request.permission_name = perm_name
                     raise PermissionDenied(
-                        'The "{0}" permission to access this resource'.format(perm_name))
+                        'The "{0}" permission is required to access this resource'
+                        .format(perm_name))
 
             return wrapper
         return view_decorator
