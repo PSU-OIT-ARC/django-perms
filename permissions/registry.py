@@ -47,8 +47,9 @@ class PermissionsRegistry:
     def __init__(self):
         self.__registry = dict()
 
-    def register(self, perm_func=None, model=None, allow_anonymous=False, name=None, replace=False):
-        """Register a permission.
+    def register(self, perm_func=None, model=None, allow_anonymous=False, name=None,
+                 replace=False, _return_entry=False):
+        """Register permission function & return the original function.
 
         This is typically used as a decorator::
 
@@ -57,9 +58,13 @@ class PermissionsRegistry:
             def can_do_something(user):
                 ...
 
+        For internal use only: you can pass ``_return_entry=True`` to
+        have the registry :class:`.Entry` returned instead of
+        ``perm_func``.
+
         """
         if perm_func is None:
-            return lambda perm_func_: self.register(perm_func_, model, allow_anonymous, name, replace)
+            return lambda f: self.register(f, model, allow_anonymous, name, replace, _return_entry)
 
         name = name if name is not None else perm_func.__name__
         if name == 'register':
@@ -68,12 +73,13 @@ class PermissionsRegistry:
             raise DuplicatePermissionError(name)
 
         view_decorator = self.__make_view_decorator(name, perm_func, model, allow_anonymous)
-        self.__registry[name] = Entry(name, perm_func, view_decorator, model, allow_anonymous)
+        entry = Entry(name, perm_func, view_decorator, model, allow_anonymous)
+        self.__registry[name] = entry
 
         register.filter(name, perm_func)
 
         log.debug('Registered permission: {0}'.format(name))
-        return perm_func
+        return entry if _return_entry else perm_func
 
     __call__ = register
 
