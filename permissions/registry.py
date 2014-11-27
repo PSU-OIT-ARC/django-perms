@@ -71,7 +71,7 @@ class PermissionsRegistry:
         try:
             return self.__registry[name].view_decorator
         except KeyError:
-            return NoSuchPermissionError(name)
+            raise NoSuchPermissionError(name)
 
     def __make_view_decorator(self, perm_name, perm_func, model, allow_anonymous):
         def view_decorator(view=None, field='pk'):
