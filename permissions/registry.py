@@ -2,7 +2,6 @@ import logging
 from collections import namedtuple
 from functools import wraps
 
-from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 
@@ -90,6 +89,14 @@ class PermissionsRegistry:
             raise NoSuchPermissionError(name)
 
     def _make_view_decorator(self, perm_name, perm_func, model, allow_anonymous):
+
+        # Putting this import here is a hack-around for testing. Merely
+        # importing login_required causes django.conf.settings to be
+        # accessed in some other module, which causes
+        # ImproperlyConfigured to be raised during the import phase of
+        # test discovery.
+        from django.contrib.auth.decorators import login_required
+
         def view_decorator(view=None, field='pk'):
 
             if view is None:
