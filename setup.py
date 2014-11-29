@@ -10,6 +10,14 @@ setup(
     description="Syntactic sugar for handling permission functions in views, templates and in code",
     packages=['permissions', 'permissions.templatetags'],
     zip_safe=False,
+    extras_require={
+        'dev': [
+            'coverage',
+            'django',
+            'django-nose',
+            'nose',
+        ],
+    },
     classifiers=[
         'Framework :: Django',
         'Programming Language :: Python :: 2',
