@@ -45,7 +45,7 @@ class PermissionsRegistry:
     """
 
     def __init__(self):
-        self.__registry = dict()
+        self._registry = dict()
 
     def register(self, perm_func=None, model=None, allow_anonymous=False, name=None,
                  replace=False, _return_entry=False):
@@ -69,12 +69,12 @@ class PermissionsRegistry:
         name = name if name is not None else perm_func.__name__
         if name == 'register':
             raise PermissionsError('register cannot be used as a permission name')
-        elif name in self.__registry and not replace:
+        elif name in self._registry and not replace:
             raise DuplicatePermissionError(name)
 
-        view_decorator = self.__make_view_decorator(name, perm_func, model, allow_anonymous)
+        view_decorator = self._make_view_decorator(name, perm_func, model, allow_anonymous)
         entry = Entry(name, perm_func, view_decorator, model, allow_anonymous)
-        self.__registry[name] = entry
+        self._registry[name] = entry
 
         register.filter(name, perm_func)
 
@@ -85,11 +85,11 @@ class PermissionsRegistry:
 
     def __getattr__(self, name):
         try:
-            return self.__registry[name].view_decorator
+            return self._registry[name].view_decorator
         except KeyError:
             raise NoSuchPermissionError(name)
 
-    def __make_view_decorator(self, perm_name, perm_func, model, allow_anonymous):
+    def _make_view_decorator(self, perm_name, perm_func, model, allow_anonymous):
         def view_decorator(view=None, field='pk'):
 
             if view is None:
