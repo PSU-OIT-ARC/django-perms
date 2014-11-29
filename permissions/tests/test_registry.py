@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import PermissionDenied
 
 from permissions.exc import NoSuchPermissionError, PermissionsError
 
@@ -51,3 +52,30 @@ class TestRegistry(TestCase):
     def test_bad_decoration(self):
         self.registry.register(lambda u: None, name='perm')
         self.assertRaises(PermissionsError, self.registry.perm, object())
+
+    def test_apply_to_class_based_view(self):
+
+        @self.registry.register(allow_anonymous=True)
+        def can_do_things(user):
+            return user.can_do_things
+
+        @self.registry.require('can_do_things')
+        class View(object):
+
+            def dispatch(self, req):
+                return getattr(self, req.method.lower())(req)
+
+            def get(self, req):
+                pass
+
+        self.assertEqual(View.dispatch.__name__, 'dispatch')
+
+        request = self.request_factory.get('/things')
+        request.user = AnonymousUser()
+
+        request.user.can_do_things = True
+        view = View()
+        view.dispatch(request)
+
+        request.user.can_do_things = False
+        self.assertRaises(PermissionDenied, view.dispatch, request)

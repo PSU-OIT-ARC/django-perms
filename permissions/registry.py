@@ -4,6 +4,7 @@ from functools import wraps
 
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 
 from .exc import DuplicatePermissionError, NoSuchPermissionError, PermissionsError
 from .templatetags.permissions import register
@@ -135,6 +136,29 @@ class PermissionsRegistry:
                 return lambda view_: view_decorator(view_, field)
             elif not callable(view):
                 raise PermissionsError('Bad call to permissions decorator')
+
+            # When a permission is applied to a class, which is presumed
+            # to be a class-based view, instead apply the permission to
+            # the class's dispatch() method. This will effectively
+            # require the permission for all of the class's view methods:
+            # get(), post(), etc. The class is returned as is.
+            #
+            # @permissions.require('can_do_stuff')
+            # class MyView(View):
+            #
+            #     def get(request):
+            #         ...
+            #
+            # In this example, the call to require() returns this
+            # instance of view_decorator. When view_decorator is
+            # called (via @), MyView is passed in. When the lines
+            # below are reached, we create a method decorator version
+            # of view_decorator, decorate dispatch() with that version,
+            # and then return MyView.
+            if isinstance(view, type):
+                view_decorator_ = method_decorator(view_decorator)
+                view.dispatch = view_decorator_(view.dispatch)
+                return view
 
             @wraps(view)
             def wrapper(request, *args, **kwargs):
