@@ -29,7 +29,7 @@ class TestRegistry(TestCase):
 
         self.assertTrue(hasattr(self.registry, 'can_do_things'))
 
-        @self.registry.can_do_things(field='model_id')
+        @self.registry.require('can_do_things', field='model_id')
         def view(request, model_id):
             pass
 
@@ -45,7 +45,8 @@ class TestRegistry(TestCase):
     def test_get_unknown_permission(self):
         with self.assertRaises(NoSuchPermissionError):
             self.registry.pants
-
+        with self.assertRaises(NoSuchPermissionError):
+            self.registry.require('pants')
 
     def test_bad_decoration(self):
         self.registry.register(lambda u: None, name='perm')

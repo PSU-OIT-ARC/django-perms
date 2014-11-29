@@ -39,6 +39,15 @@ class PermissionsRegistry:
         def can_do_things(user, instance):
             ...
 
+    Then require permissions on views like this::
+
+        # my/project/app/views.py
+        from my.project.perms import permissions
+
+        @permissions.require('can_do_stuff')
+        def my_view(request):
+            ...
+
     TODO: Write more documentation.
 
     """
@@ -82,11 +91,34 @@ class PermissionsRegistry:
 
     __call__ = register
 
-    def __getattr__(self, name):
+    def require(self, perm_name, **kwargs):
+        """Use as a decorator on a view to require a permission.
+
+        Optional args:
+
+            - ``field`` The name of the model field to use for lookup
+              (this is only relevant when requiring a permission that
+              was registered with ``model=SomeModelClass``)
+
+        Examples::
+
+            @registry.require('can_do_stuff')
+            def view(request):
+                ...
+
+            @registry.require('can_do_stuff_with_model', field='alt_id')
+            def view_model(request, model_id):
+                ...
+
+        """
         try:
-            return self._registry[name].view_decorator
+            view_decorator = self._registry[perm_name].view_decorator
         except KeyError:
-            raise NoSuchPermissionError(name)
+            raise NoSuchPermissionError(perm_name)
+        return view_decorator(**kwargs) if kwargs else view_decorator
+
+    def __getattr__(self, name):
+        return self.require(name)
 
     def _make_view_decorator(self, perm_name, perm_func, model, allow_anonymous):
 
