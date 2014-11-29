@@ -1,5 +1,6 @@
 import sys
 
+from .exc import NoSuchPermissionError
 from .registry import PermissionsRegistry
 
 
@@ -82,4 +83,9 @@ class DecoratorContainer:
 
     """
 
-    pass
+    def __getattr__(self, name):
+        # If this gets invoked, it means the permission identified by
+        # ``name`` wasn't found in the "usual" places--that is, it's not
+        # an attribute of the container instance, its class, super
+        # classes, etc.
+        raise NoSuchPermissionError(name)
