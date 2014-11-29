@@ -108,7 +108,7 @@ class PermissionsRegistry:
                     except IndexError:
                         local_vars = view.__code__.co_varnames
                         field_val = kwargs[local_vars[1]]
-                    model_obj = get_object_or_404(model, **{field: field_val})
+                    model_obj = self._get_model_instance(model, **{field: field_val})
                     test = perm_func(request.user, model_obj)
                 else:
                     test = perm_func(request.user, *args, **kwargs)
@@ -127,3 +127,6 @@ class PermissionsRegistry:
 
             return wrapper
         return view_decorator
+
+    def _get_model_instance(self, model, **kwargs):
+        return get_object_or_404(model, **kwargs)
