@@ -1,31 +1,18 @@
-from unittest import TestCase
-
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
-from django.test import RequestFactory
 
-from permissions import decorator, permission, PermissionsRegistry
+from permissions import decorator, permission
 from permissions.exc import DuplicatePermissionError, NoSuchPermissionError
 
-
-class Registry(PermissionsRegistry):
-
-    def _get_model_instance(self, model, **kwargs):
-        return model(**kwargs)
-
-
-class Model:
-
-    def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+from .base import Model, TestCase
 
 
 class TestDecorator(TestCase):
 
     def setUp(self):
-        decorator.registry = Registry()
-        self.request_factory = RequestFactory()
+        super(TestDecorator, self).setUp()
+        # Reset global registry on every run
+        decorator.registry = self.registry
 
     def tearDown(self):
         globals().pop('decorators', None)

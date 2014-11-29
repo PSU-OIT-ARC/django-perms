@@ -1,13 +1,11 @@
-from unittest import TestCase
+from django.contrib.auth.models import AnonymousUser
 
-from permissions import PermissionsRegistry
 from permissions.exc import NoSuchPermissionError, PermissionsError
+
+from .base import Model, TestCase
 
 
 class TestRegistry(TestCase):
-
-    def setUp(self):
-        self.registry = PermissionsRegistry()
 
     def test_register(self):
 
@@ -23,19 +21,22 @@ class TestRegistry(TestCase):
 
     def test_register_with_args(self):
 
-        class Pants:
-
-            pass
-
-        @self.registry.register(model=Pants, allow_anonymous=True)
-        def can_do_things(user, pants):
-            pass
+        @self.registry.register(model=Model, allow_anonymous=True)
+        def can_do_things(user, instance):
+            self.assertIsInstance(instance, Model)
+            self.assertEqual(instance.model_id, 1)
+            return user.can_do_things
 
         self.assertTrue(hasattr(self.registry, 'can_do_things'))
 
-        @self.registry.can_do_things(field='pants_id')
-        def view(request, pants_id):
+        @self.registry.can_do_things(field='model_id')
+        def view(request, model_id):
             pass
+
+        request = self.request_factory.get('/things/1')
+        request.user = AnonymousUser()
+        request.user.can_do_things = True
+        view(request, 1)
 
     def test_cannot_use_register_as_perm_name(self):
         self.assertRaises(
