@@ -13,12 +13,34 @@ from .templatetags.permissions import register
 log = logging.getLogger(__name__)
 
 
-Entry = namedtuple('Entry', ('name', 'perm_func', 'view_decorator', 'model', 'allow_anonymous'))
+Entry = namedtuple('Entry', (
+    'name', 'perm_func', 'view_decorator', 'model', 'allow_staff', 'allow_superuser',
+    'allow_anonymous'
+))
 
 
 class PermissionsRegistry:
 
     """A registry of permissions.
+
+    Args:
+
+        - allow_staff: Allow staff to access all views by default. If
+          this is set and the user is a staff member, the permission
+          logic will not be invoked.
+
+        - allow_superuser: Allow superusers to access all views by
+          default. If this is set and the user is a superuser, the
+          permission logic will not be invoked.
+
+        - allow_anonymous: Allow anonymous users. Note: this is
+          different from the two options above in that it doesn't
+          grant permission by default but instead just gives anonymous
+          users a chance to access a view--the permission logic is still
+          invoked.
+
+        All of these options can be overridden on a per-permission
+        basis by passing the corresponding argument to :meth:`register`.
 
     Create a registry somewhere in your project::
 
@@ -53,11 +75,14 @@ class PermissionsRegistry:
 
     """
 
-    def __init__(self):
+    def __init__(self, allow_staff=False, allow_superuser=False, allow_anonymous=False):
         self._registry = dict()
+        self._allow_staff = allow_staff
+        self._allow_superuser = allow_superuser
+        self._allow_anonymous = allow_anonymous
 
-    def register(self, perm_func=None, model=None, allow_anonymous=False, name=None,
-                 replace=False, _return_entry=False):
+    def register(self, perm_func=None, model=None, allow_staff=None, allow_superuser=None,
+                 allow_anonymous=None, name=None, replace=False, _return_entry=False):
         """Register permission function & return the original function.
 
         This is typically used as a decorator::
@@ -72,8 +97,17 @@ class PermissionsRegistry:
         ``perm_func``.
 
         """
+        allow_staff = self._allow_staff if allow_staff is None else allow_staff
+        allow_superuser = self._allow_superuser if allow_superuser is None else allow_superuser
+        allow_anonymous = self._allow_anonymous if allow_anonymous is None else allow_anonymous
+
         if perm_func is None:
-            return lambda f: self.register(f, model, allow_anonymous, name, replace, _return_entry)
+            return (
+                lambda perm_func_:
+                    self.register(
+                        perm_func_, model, allow_staff, allow_superuser, allow_anonymous, name,
+                        replace, _return_entry)
+            )
 
         name = name if name is not None else perm_func.__name__
         if name == 'register':
@@ -81,8 +115,10 @@ class PermissionsRegistry:
         elif name in self._registry and not replace:
             raise DuplicatePermissionError(name)
 
-        view_decorator = self._make_view_decorator(name, perm_func, model, allow_anonymous)
-        entry = Entry(name, perm_func, view_decorator, model, allow_anonymous)
+        view_decorator = self._make_view_decorator(
+            name, perm_func, model, allow_staff, allow_superuser, allow_anonymous)
+        entry = Entry(
+            name, perm_func, view_decorator, model, allow_staff, allow_superuser, allow_anonymous)
         self._registry[name] = entry
 
         register.filter(name, perm_func)
@@ -121,7 +157,8 @@ class PermissionsRegistry:
     def __getattr__(self, name):
         return self.require(name)
 
-    def _make_view_decorator(self, perm_name, perm_func, model, allow_anonymous):
+    def _make_view_decorator(self, perm_name, perm_func, model, allow_staff, allow_superuser,
+                             allow_anonymous):
 
         # Putting this import here is a hack-around for testing. Merely
         # importing login_required causes django.conf.settings to be
@@ -162,7 +199,9 @@ class PermissionsRegistry:
 
             @wraps(view)
             def wrapper(request, *args, **kwargs):
-                if not allow_anonymous and request.user.is_anonymous():
+                user = request.user
+
+                if not allow_anonymous and user.is_anonymous():
                     return login_required(lambda *_, **__: True)(request)
 
                 if model is not None:
@@ -172,11 +211,17 @@ class PermissionsRegistry:
                         local_vars = view.__code__.co_varnames
                         field_val = kwargs[local_vars[1]]
                     model_obj = self._get_model_instance(model, **{field: field_val})
-                    test = perm_func(request.user, model_obj)
+                    test = lambda: perm_func(user, model_obj)
                 else:
-                    test = perm_func(request.user, *args, **kwargs)
+                    test = lambda: perm_func(user, *args, **kwargs)
 
-                if test:
+                has_permission = (
+                    allow_staff and user.is_staff or
+                    allow_superuser and user.is_superuser or
+                    test()
+                )
+
+                if has_permission:
                     return view(request, *args, **kwargs)
                 else:
                     # Tack on the permission name to the request for
