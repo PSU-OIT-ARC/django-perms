@@ -1,5 +1,3 @@
-from unittest import skip
-
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 
@@ -82,28 +80,27 @@ class TestRegistry(TestCase):
         request.user.can_do_things = False
         self.assertRaises(PermissionDenied, view.dispatch, request)
 
-    @skip('known failure')
     def test_apply_to_class_based_view_with_model(self):
 
         @self.registry.register(model=Model, allow_anonymous=True)
         def can_do_stuff(user, instance):
-            return user.can_do_things and instance is not None
+            return user.can_do_stuff and instance is not None
 
         @self.registry.require('can_do_stuff')
         class View(object):
 
-            def dispatch(self, req, instance, *args, **kwargs):
-                return getattr(self, req.method.lower())(req, instance, *args, **kwargs)
+            def dispatch(self, req, model_id, *args, **kwargs):
+                return getattr(self, req.method.lower())(req, model_id, *args, **kwargs)
 
-            def get(self, req, instance):
-                return instance
+            def get(self, req, model_id):
+                return model_id
 
         request = self.request_factory.get('/stuff/1')
         request.user = AnonymousUser()
 
         request.user.can_do_stuff = True
         view = View()
-        view.dispatch(request)
+        view.dispatch(request, 1)
 
         request.user.can_do_stuff = False
-        self.assertRaises(PermissionDenied, view.dispatch, request)
+        self.assertRaises(PermissionDenied, view.dispatch, request, model_id=1)

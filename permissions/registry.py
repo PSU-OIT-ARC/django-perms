@@ -4,8 +4,8 @@ from collections import namedtuple
 from functools import wraps
 
 from django.core.exceptions import PermissionDenied
+from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from django.utils.decorators import method_decorator
 
 from .exc import DuplicatePermissionError, NoSuchPermissionError, PermissionsError
 from .templatetags.permissions import register
@@ -201,42 +201,53 @@ class PermissionsRegistry:
             # In this example, the call to require() returns this
             # instance of view_decorator. When view_decorator is
             # called (via @), MyView is passed in. When the lines
-            # below are reached, we create a method decorator version
-            # of view_decorator, decorate dispatch() with that version,
-            # and then return MyView.
+            # below are reached, we decorate MyView.dispatch() and
+            # then return MyView.
             if isinstance(view, type):
-                view_decorator_ = method_decorator(view_decorator)
-                view.dispatch = view_decorator_(view.dispatch)
+                view.dispatch = view_decorator(view.dispatch, field)
                 return view
 
             # This contains the names of all of the view's args
-            # (positional and keyword), excluding the first arg, which
-            # is always assumed to be the request. This is used to
-            # find the field value for permissions that operate on
-            # a model.
-            view_arg_names = inspect.getargspec(view).args[1:]
+            # (positional and keyword). This is used to find the field
+            # value for permissions that operate on a model.
+            view_arg_names = inspect.getargspec(view).args
 
             @wraps(view)
-            def wrapper(request, *args, **kwargs):
+            def wrapper(*args, **kwargs):
+                # The following allows permissions decorators to work on
+                # view functions and class-based view methods. Either
+                # the first or the second arg must be the request. In
+                # the latter case, the first arg will be an instance of
+                # a class-based view).
+                if isinstance(args[0], HttpRequest):
+                    request_index = 0
+                elif isinstance(args[1], HttpRequest):
+                    request_index = 1
+                else:
+                    raise PermissionsError('Could not find request in args passed to view')
+
+                request = args[request_index]
                 user = request.user
+                args_index = request_index + 1
+                remaining_args = args[args_index:]  # Args after request
 
                 if not allow_anonymous and user.is_anonymous():
                     return login_required(lambda *_, **__: True)(request)
 
                 if model is not None:
-                    if args:
-                        # Assume the 1st positional arg (after request)
+                    if remaining_args:
+                        # Assume the 1st positional arg after request
                         # passed to the view contains the field value...
-                        field_val = args[0]
+                        field_val = remaining_args[0]
                     else:
                         # ...unless there are no positional args after
                         # the request; in that case, use the value of
                         # the first keyword arg.
-                        field_val = kwargs[view_arg_names[0]]
+                        field_val = kwargs[view_arg_names[args_index]]
                     test = lambda: perm_func(
                         user, self._get_model_instance(model, **{field: field_val}))
                 else:
-                    test = lambda: perm_func(user, *args, **kwargs)
+                    test = lambda: perm_func(user, *remaining_args, **kwargs)
 
                 has_permission = (
                     allow_staff and user.is_staff or
@@ -245,7 +256,7 @@ class PermissionsRegistry:
                 )
 
                 if has_permission:
-                    return view(request, *args, **kwargs)
+                    return view(*args, **kwargs)
                 else:
                     # Tack on the permission name to the request for
                     # better error handling since Django doesn't
