@@ -233,8 +233,8 @@ class PermissionsRegistry:
                         # the request; in that case, use the value of
                         # the first keyword arg.
                         field_val = kwargs[view_arg_names[0]]
-                    instance = self._get_model_instance(model, **{field: field_val})
-                    test = lambda: perm_func(user, instance)
+                    test = lambda: perm_func(
+                        user, self._get_model_instance(model, **{field: field_val}))
                 else:
                     test = lambda: perm_func(user, *args, **kwargs)
 
