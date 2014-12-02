@@ -1,3 +1,4 @@
+import inspect
 import logging
 from collections import namedtuple
 from functools import wraps
@@ -208,6 +209,13 @@ class PermissionsRegistry:
                 view.dispatch = view_decorator_(view.dispatch)
                 return view
 
+            # This contains the names of all of the view's args
+            # (positional and keyword), excluding the first arg, which
+            # is always assumed to be the request. This is used to
+            # find the field value for permissions that operate on
+            # a model.
+            view_arg_names = inspect.getargspec(view).args[1:]
+
             @wraps(view)
             def wrapper(request, *args, **kwargs):
                 user = request.user
@@ -216,13 +224,17 @@ class PermissionsRegistry:
                     return login_required(lambda *_, **__: True)(request)
 
                 if model is not None:
-                    try:
+                    if args:
+                        # Assume the 1st positional arg (after request)
+                        # passed to the view contains the field value...
                         field_val = args[0]
-                    except IndexError:
-                        local_vars = view.__code__.co_varnames
-                        field_val = kwargs[local_vars[1]]
-                    model_obj = self._get_model_instance(model, **{field: field_val})
-                    test = lambda: perm_func(user, model_obj)
+                    else:
+                        # ...unless there are no positional args after
+                        # the request; in that case, use the value of
+                        # the first keyword arg.
+                        field_val = kwargs[view_arg_names[0]]
+                    instance = self._get_model_instance(model, **{field: field_val})
+                    test = lambda: perm_func(user, instance)
                 else:
                     test = lambda: perm_func(user, *args, **kwargs)
 
