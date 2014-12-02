@@ -19,6 +19,9 @@ Entry = namedtuple('Entry', (
 ))
 
 
+NO_VALUE = object()
+
+
 class PermissionsRegistry:
 
     """A registry of permissions.
@@ -121,7 +124,15 @@ class PermissionsRegistry:
             name, perm_func, view_decorator, model, allow_staff, allow_superuser, allow_anonymous)
         self._registry[name] = entry
 
-        register.filter(name, perm_func)
+        @wraps(perm_func)
+        def filter_func(user, instance=NO_VALUE):
+            return (
+                allow_staff and user.is_staff or
+                allow_superuser and user.is_superuser or
+                perm_func(user) if instance is NO_VALUE else perm_func(user, instance)
+            )
+
+        register.filter(name, filter_func)
 
         log.debug('Registered permission: {0}'.format(name))
         return entry if _return_entry else perm_func
