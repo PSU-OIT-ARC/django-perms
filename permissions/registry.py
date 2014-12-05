@@ -3,9 +3,11 @@ import logging
 from collections import namedtuple
 from functools import wraps
 
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
+from django.utils.module_loading import import_string
 
 from .exc import DuplicatePermissionError, NoSuchPermissionError, PermissionsError
 from .templatetags.permissions import register
@@ -84,6 +86,15 @@ class PermissionsRegistry:
         self._allow_staff = allow_staff
         self._allow_superuser = allow_superuser
         self._allow_anonymous = allow_anonymous
+
+        # Settings
+        self._settings = getattr(settings, 'PERMISSIONS', {})
+        request_types = self._settings.get('REQUEST_TYPES', ())
+        request_types = tuple(request_types)
+        request_types = tuple(import_string(t) for t in request_types)
+        if HttpRequest not in request_types:
+            request_types = (HttpRequest,) + request_types
+        self._settings['REQUEST_TYPES'] = request_types
 
     def register(self, perm_func=None, model=None, allow_staff=None, allow_superuser=None,
                  allow_anonymous=None, name=None, replace=False, _return_entry=False):
@@ -219,9 +230,10 @@ class PermissionsRegistry:
                 # the first or the second arg must be the request. In
                 # the latter case, the first arg will be an instance of
                 # a class-based view).
-                if isinstance(args[0], HttpRequest):
+                request_types = self._settings['REQUEST_TYPES']
+                if isinstance(args[0], request_types):
                     request_index = 0
-                elif isinstance(args[1], HttpRequest):
+                elif isinstance(args[1], request_types):
                     request_index = 1
                 else:
                     raise PermissionsError('Could not find request in args passed to view')
