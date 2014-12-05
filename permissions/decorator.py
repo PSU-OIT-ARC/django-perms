@@ -7,7 +7,7 @@ from .registry import PermissionsRegistry
 __all__ = ['permission']
 
 
-registry = PermissionsRegistry()
+registry = None
 
 
 def permission(perm_func=None, **kwargs):
@@ -63,6 +63,9 @@ def permission(perm_func=None, **kwargs):
               the ``decorators`` global as shown above.
 
     """
+    global registry
+    if registry is None:
+        registry = PermissionsRegistry()
     if perm_func is None:
         return lambda f: permission(f, **kwargs)
     entry = registry.register(perm_func, _return_entry=True, **kwargs)
