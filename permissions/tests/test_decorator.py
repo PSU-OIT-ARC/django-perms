@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import PermissionDenied
 
 from permissions import decorator, permission
@@ -37,7 +37,7 @@ class TestDecorator(TestCase):
             pass
 
         request = self.request_factory.get('/stuff')
-        request.user = AnonymousUser()
+        request.user = User()
         request.user.can_do_stuff = True
         view(request)
         request.user.can_do_stuff = False

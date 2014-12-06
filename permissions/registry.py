@@ -269,6 +269,8 @@ class PermissionsRegistry:
 
                 if has_permission:
                     return view(*args, **kwargs)
+                elif user.is_anonymous():
+                    return login_required(lambda *_, **__: True)(request)
                 else:
                     # Tack on the permission name to the request for
                     # better error handling since Django doesn't

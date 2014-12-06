@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import PermissionDenied
 
 from permissions.exc import NoSuchPermissionError, PermissionsError
@@ -71,7 +71,7 @@ class TestRegistry(TestCase):
         self.assertEqual(View.dispatch.__name__, 'dispatch')
 
         request = self.request_factory.get('/things')
-        request.user = AnonymousUser()
+        request.user = User()
 
         request.user.can_do_things = True
         view = View()
@@ -96,7 +96,7 @@ class TestRegistry(TestCase):
                 return model_id
 
         request = self.request_factory.get('/stuff/1')
-        request.user = AnonymousUser()
+        request.user = User()
 
         request.user.can_do_stuff = True
         view = View()
