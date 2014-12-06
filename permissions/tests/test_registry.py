@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import PermissionDenied
 
+from permissions import PermissionsRegistry
 from permissions.exc import NoSuchPermissionError, PermissionsError
 
 from .base import Model, TestCase
@@ -104,3 +105,18 @@ class TestRegistry(TestCase):
 
         request.user.can_do_stuff = False
         self.assertRaises(PermissionDenied, view.dispatch, request, model_id=1)
+
+    def test_perm_func_is_not_called_when_user_is_staff_and_allow_staff_is_set(self):
+        registry = PermissionsRegistry(allow_staff=True)
+
+        @registry.register
+        def perm(user):
+            raise PermissionsError('Should not be raised')
+
+        @registry.perm
+        def view(request):
+            pass
+
+        request = self.request_factory.get('/things/1')
+        request.user = User(is_staff=True)
+        view(request)
