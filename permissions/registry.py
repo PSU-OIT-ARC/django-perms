@@ -221,7 +221,10 @@ class PermissionsRegistry:
             # This contains the names of all of the view's args
             # (positional and keyword). This is used to find the field
             # value for permissions that operate on a model.
-            view_arg_names = inspect.getargspec(view).args
+            view_args_spec = inspect.getargspec(view)
+            view_arg_names = view_args_spec.args
+            perm_func_arg_spec = inspect.getargspec(perm_func)
+            perm_func_arg_names = perm_func_arg_spec.args
 
             @wraps(view)
             def wrapper(*args, **kwargs):
@@ -240,26 +243,48 @@ class PermissionsRegistry:
 
                 request = args[request_index]
                 user = request.user
-                args_index = request_index + 1
-                remaining_args = args[args_index:]  # Args after request
 
                 if not allow_anonymous and user.is_anonymous():
                     return login_required(lambda *_, **__: True)(request)
 
-                if model is not None:
-                    if remaining_args:
-                        # Assume the 1st positional arg after request
-                        # passed to the view contains the field value...
-                        field_val = remaining_args[0]
-                    else:
-                        # ...unless there are no positional args after
-                        # the request; in that case, use the value of
-                        # the first keyword arg.
-                        field_val = kwargs[view_arg_names[args_index]]
-                    test = lambda: perm_func(
-                        user, self._get_model_instance(model, **{field: field_val}))
-                else:
-                    test = lambda: perm_func(user, *remaining_args, **kwargs)
+                def test():
+                    # All this stuff is in this closure because it won't
+                    # be needed if the permission check is bypassed. In
+                    # particular, we want to avoid fetching the model
+                    # instance if possible.
+                    perm_func_args = [user]
+                    perm_func_kwargs = {}
+
+                    args_index = request_index + 1
+                    remaining_args = args[args_index:]  # Args after request
+                    remaining_arg_names = view_arg_names[args_index:]
+
+                    view_args = kwargs.copy()
+                    view_args['request'] = request
+                    view_args.update(zip(remaining_arg_names, remaining_args))
+
+                    if model is not None:
+                        if remaining_args:
+                            # Assume the 1st positional arg after the
+                            # request passed to the view contains the
+                            # field value...
+                            field_val = remaining_args[0]
+                        else:
+                            # ...unless there are no positional args
+                            # after the request; in that case, use the
+                            # value of the first keyword arg.
+                            field_val = kwargs[remaining_arg_names[0]]
+                        instance = self._get_model_instance(model, **{field: field_val})
+                        perm_func_args.append(instance)
+
+                    # Starting after the perm func's required args
+                    # (either user or user & instance), map view args
+                    # to perm func args.
+                    for n in perm_func_arg_names[len(perm_func_args):]:
+                        if n in view_args:
+                            perm_func_kwargs[n] = view_args[n]
+
+                    return perm_func(*perm_func_args, **perm_func_kwargs)
 
                 has_permission = (
                     allow_staff and user.is_staff or

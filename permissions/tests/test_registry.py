@@ -106,6 +106,23 @@ class TestRegistry(TestCase):
         request.user.can_do_stuff = False
         self.assertRaises(PermissionDenied, view.dispatch, request, model_id=1)
 
+    def test_view_args_are_passed_through_to_perm_func(self):
+
+        @self.registry.register
+        def perm(user, model_id, request=None, not_a_view_arg='XXX'):
+            self.assertEqual(model_id, 1)
+            self.assertIs(request, request_passed_to_view)
+            self.assertEqual(not_a_view_arg, 'XXX')
+            return True
+
+        @self.registry.perm
+        def view(request, model_id, view_arg_that_is_not_passed_through):
+            pass
+
+        request_passed_to_view = self.request_factory.get('/things/1')
+        request_passed_to_view.user = User()
+        view(request_passed_to_view, 1, 2)
+
     def test_perm_func_is_not_called_when_user_is_staff_and_allow_staff_is_set(self):
         registry = PermissionsRegistry(allow_staff=True)
 
