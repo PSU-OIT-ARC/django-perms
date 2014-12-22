@@ -89,12 +89,12 @@ class PermissionsRegistry:
 
         # Settings
         self._settings = getattr(settings, 'PERMISSIONS', {})
-        request_types = self._settings.get('REQUEST_TYPES', ())
+        request_types = self._settings.get('request_types', ())
         request_types = tuple(request_types)
         request_types = tuple(import_string(t) for t in request_types)
         if HttpRequest not in request_types:
             request_types = (HttpRequest,) + request_types
-        self._settings['REQUEST_TYPES'] = request_types
+        self._settings['request_types'] = request_types
 
     def register(self, perm_func=None, model=None, allow_staff=None, allow_superuser=None,
                  allow_anonymous=None, name=None, replace=False, _return_entry=False):
@@ -190,6 +190,8 @@ class PermissionsRegistry:
         # test discovery.
         from django.contrib.auth.decorators import login_required
 
+        request_types = self._settings['request_types']
+
         def view_decorator(view=None, field='pk'):
 
             if view is None:
@@ -233,7 +235,6 @@ class PermissionsRegistry:
                 # the first or the second arg must be the request. In
                 # the latter case, the first arg will be an instance of
                 # a class-based view).
-                request_types = self._settings['REQUEST_TYPES']
                 if isinstance(args[0], request_types):
                     request_index = 0
                 elif isinstance(args[1], request_types):
