@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
 
 from .exc import DuplicatePermissionError, NoSuchPermissionError, PermissionsError
+from .meta import PermissionsMeta
 from .templatetags.permissions import register
 
 
@@ -95,6 +96,13 @@ class PermissionsRegistry:
         if HttpRequest not in request_types:
             request_types = (HttpRequest,) + request_types
         self._settings['request_types'] = request_types
+
+    @property
+    def metaclass(self):
+        """Get a metaclass configured to use this registry."""
+        if '_metaclass' not in self.__dict__:
+            self._metaclass = type('PermissionsMeta', (PermissionsMeta,), {'registry': self})
+        return self._metaclass
 
     def register(self, perm_func=None, model=None, allow_staff=None, allow_superuser=None,
                  allow_anonymous=None, name=None, replace=False, _return_entry=False):
