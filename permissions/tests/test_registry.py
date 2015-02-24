@@ -36,7 +36,7 @@ class TestRegistry(TestCase):
             pass
 
         request = self.request_factory.get('/things/1')
-        request.user = AnonymousUser()
+        request.user = User()
         request.user.can_do_things = True
         view(request, 1)
 
@@ -137,3 +137,31 @@ class TestRegistry(TestCase):
         request = self.request_factory.get('/things/1')
         request.user = User(is_staff=True)
         view(request)
+
+    def test_anon_is_required_to_login(self):
+        @self.registry.register
+        def perm(user):
+            return False
+
+        @self.registry.require('perm')
+        def view(request):
+            pass
+
+        request = self.request_factory.get('/things/1')
+        request.user = AnonymousUser()
+        response = view(request, 1)
+        self.assertEqual(response.status_code, 302)
+
+    def test_anon_is_required_to_login_when_perm_check_fails(self):
+        @self.registry.register(allow_anonymous=True)
+        def perm(user):
+            return False
+
+        @self.registry.require('perm')
+        def view(request):
+            pass
+
+        request = self.request_factory.get('/things/1')
+        request.user = AnonymousUser()
+        response = view(request, 1)
+        self.assertEqual(response.status_code, 302)
