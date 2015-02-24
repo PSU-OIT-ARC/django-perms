@@ -165,3 +165,24 @@ class TestRegistry(TestCase):
         request.user = AnonymousUser()
         response = view(request, 1)
         self.assertEqual(response.status_code, 302)
+
+    def test_ensure_custom_unauthenticated_handler_is_called(self):
+        def handler(request):
+            handler.called = True
+        handler.called = False
+
+        registry = PermissionsRegistry(unauthenticated_handler=handler)
+
+        @registry.register
+        def perm(user):
+            return False
+
+        @registry.require('perm')
+        def view(request):
+            pass
+
+        request = self.request_factory.get('/things/1')
+        request.user = AnonymousUser()
+        self.assertFalse(handler.called)
+        view(request, 1)
+        self.assertTrue(handler.called)
