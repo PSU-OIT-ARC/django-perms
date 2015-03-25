@@ -7,7 +7,10 @@ import django.conf
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
-from django.utils.module_loading import import_string
+try:
+    from django.utils.module_loading import import_string
+except ImportError:
+    from django.utils.module_loading import import_by_path as import_string
 
 from .exc import DuplicatePermissionError, NoSuchPermissionError, PermissionsError
 from .meta import PermissionsMeta
