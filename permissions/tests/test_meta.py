@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 
+import six
+
 from ..exc import PermissionsError
 from ..meta import PermissionsMeta
 
@@ -27,7 +29,8 @@ class TestMeta(TestCase):
 
     def test_registry_metaclass(self):
 
-        class View(object, metaclass=self.registry.metaclass):
+        @six.add_metaclass(self.registry.metaclass)
+        class View(object):
 
             permissions = {
                 'get': 'can_view',
@@ -40,7 +43,8 @@ class TestMeta(TestCase):
 
     def test_specify_permissions_registry_on_view_class(self):
 
-        class View(object, metaclass=PermissionsMeta):
+        @six.add_metaclass(PermissionsMeta)
+        class View(object):
 
             permissions_registry = self.registry
 
@@ -56,7 +60,8 @@ class TestMeta(TestCase):
     def test_no_registry(self):
 
         with self.assertRaises(PermissionsError):
-            class View(object, metaclass=PermissionsMeta):
+            @six.add_metaclass(PermissionsMeta)
+            class View(object):
 
                 permissions = {
                     'get': 'can_view',

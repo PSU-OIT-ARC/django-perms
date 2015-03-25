@@ -16,6 +16,7 @@ setup(
             'django',
             'django-nose',
             'nose',
+            'six',
         ],
     },
     classifiers=[
