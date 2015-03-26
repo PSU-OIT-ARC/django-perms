@@ -248,14 +248,18 @@ class PermissionsRegistry:
                 ...
 
         """
-        try:
-            view_decorator = self._registry[perm_name].view_decorator
-        except KeyError:
-            raise NoSuchPermissionError(perm_name)
+        view_decorator = self._get_entry(perm_name).view_decorator
         return view_decorator(**kwargs) if kwargs else view_decorator
 
     def __getattr__(self, name):
         return self.require(name)
+
+    def _get_entry(self, perm_name):
+        """Get registry entry for permission."""
+        try:
+            return self._registry[perm_name]
+        except KeyError:
+            raise NoSuchPermissionError(perm_name)
 
     def _make_view_decorator(self, perm_name, perm_func, model, allow_staff, allow_superuser,
                              allow_anonymous, unauthenticated_handler, request_types):
