@@ -18,6 +18,7 @@ settings.configure(
         'permissions',
         'permissions.tests',
     ],
+    MIDDLEWARE_CLASSES=[],
     ROOT_URLCONF='permissions.tests.urls',
     TEST_RUNNER='django_nose.NoseTestSuiteRunner'
 )
