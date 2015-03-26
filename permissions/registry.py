@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 Entry = namedtuple('Entry', (
     'name', 'perm_func', 'view_decorator', 'model', 'allow_staff', 'allow_superuser',
-    'allow_anonymous', 'unauthenticated_handler', 'request_types'
+    'allow_anonymous', 'unauthenticated_handler', 'request_types', 'views'
 ))
 
 
@@ -210,7 +210,7 @@ class PermissionsRegistry:
             unauthenticated_handler, request_types)
         entry = Entry(
             name, perm_func, view_decorator, model, allow_staff, allow_superuser, allow_anonymous,
-            unauthenticated_handler, request_types)
+            unauthenticated_handler, request_types, set())
         self._registry[name] = entry
 
         @wraps(perm_func)
@@ -261,6 +261,12 @@ class PermissionsRegistry:
         except KeyError:
             raise NoSuchPermissionError(perm_name)
 
+    def _get_view_name(self, view):
+        """Get fully-qualified name for ``view``."""
+        if hasattr(view, '__qualname__'):
+            return view.__qualname__
+        return '{0.__module__}.{0.__name__}'.format(view)
+
     def _make_view_decorator(self, perm_name, perm_func, model, allow_staff, allow_superuser,
                              allow_anonymous, unauthenticated_handler, request_types):
 
@@ -277,6 +283,9 @@ class PermissionsRegistry:
                 return lambda view_: view_decorator(view_, field)
             elif not callable(view):
                 raise PermissionsError('Bad call to permissions decorator')
+
+            entry = self._get_entry(perm_name)
+            entry.views.add(self._get_view_name(view))
 
             # When a permission is applied to a class, which is presumed
             # to be a class-based view, instead apply the permission to
@@ -388,6 +397,21 @@ class PermissionsRegistry:
 
             return wrapper
         return view_decorator
+
+    def entry_for_view(self, view, perm_name):
+        """Get registry entry for permission if ``view`` requires it.
+
+        In other words, if ``view`` requires the permission specified by
+        ``perm_name``, return the :class:`Entry` associated with the
+        permission. If ``view`` doesn't require the permission, return
+        ``None`` instead.
+
+        """
+        view_name = self._get_view_name(view)
+        entry = self._get_entry(perm_name)
+        if view_name in entry.views:
+            return entry
+        return None
 
     def _get_model_instance(self, model, **kwargs):  # pragma: no cover
         return get_object_or_404(model, **kwargs)
