@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import PermissionDenied
+from django.views.generic import View
 
 from permissions import PermissionsRegistry
 from permissions.exc import NoSuchPermissionError, PermissionsError
@@ -186,3 +187,37 @@ class TestRegistry(TestCase):
         self.assertFalse(handler.called)
         view(request, 1)
         self.assertTrue(handler.called)
+
+    def test_ensure_view_perms(self):
+
+        @self.registry.register
+        def perm(user):
+            pass
+
+        @self.registry.require('perm')
+        def view(request):
+            pass
+
+        entry = self.registry.entry_for_view(view, 'perm')
+        self.assertIsNotNone(entry)
+        self.assertIs(entry.perm_func, perm)
+
+        # try the same thing with a CBV
+        @self.registry.require('perm')
+        class AView(View):
+            def get(self, request):
+                pass
+
+        entry = self.registry.entry_for_view(AView, 'perm')
+        self.assertIsNotNone(entry)
+        self.assertIs(entry.perm_func, perm)
+
+        # same thing with the permission on a CBV method
+        class AnotherView(View):
+            @self.registry.require('perm')
+            def get(self, request):
+                pass
+
+        entry = self.registry.entry_for_view(AnotherView.get, 'perm')
+        self.assertIsNotNone(entry)
+        self.assertIs(entry.perm_func, perm)
