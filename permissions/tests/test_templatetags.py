@@ -4,18 +4,15 @@ from django.template import Context, Template
 
 from permissions import PermissionsRegistry
 
-
-class Model:
-
-    pass
+from .base import Model, User
 
 
 def can_do(user):
-    return user is not None
+    return 'can_do' in user.permissions
 
 
 def can_do_with_model(user, instance):
-    return None not in (user, instance)
+    return 'can_do_with_model' in user.permissions
 
 
 class TestTemplateTags(TestCase):
@@ -31,21 +28,25 @@ class TestTemplateTags(TestCase):
         )
 
     def test_can_do(self):
-        context = Context({'user': object(), 'instance': None})
+        user = User(permissions=['can_do'])
+        context = Context({'user': user})
         result = self.template.render(context)
         self.assertIn('can_do', result)
 
     def test_cannot_do(self):
-        context = Context({'user': None, 'instance': None})
+        user = User()
+        context = Context({'user': user})
         result = self.template.render(context)
         self.assertNotIn('can_do', result)
 
     def test_can_do_with_model(self):
-        context = Context({'user': object(), 'instance': object()})
+        user = User(permissions=['can_do_with_model'])
+        context = Context({'user': user, 'instance': Model()})
         result = self.template.render(context)
         self.assertIn('can_do_with_model', result)
 
     def test_cannot_do_with_model(self):
-        context = Context({'user': None, 'instance': object()})
+        user = User()
+        context = Context({'user': user, 'instance': Model()})
         result = self.template.render(context)
         self.assertNotIn('can_do_with_model', result)
