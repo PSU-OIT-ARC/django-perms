@@ -14,7 +14,7 @@ class PermissionsRegistry(BasePermissionsRegistry):
         return model(**kwargs)
 
 
-class Model:
+class Model(object):
 
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
