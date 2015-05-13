@@ -219,6 +219,8 @@ class PermissionsRegistry:
         def filter_func(user, instance=NO_VALUE):
             if not isinstance(user, (self._get_user_model(), AnonymousUser)):
                 return False
+            if not allow_anonymous and user.is_anonymous():
+                return False
             test = lambda: perm_func(user) if instance is NO_VALUE else perm_func(user, instance)
             return (
                 allow_staff and user.is_staff or

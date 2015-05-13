@@ -2,7 +2,7 @@ from django.test import TestCase
 
 from django.template import Context, Template
 
-from .base import PermissionsRegistry, Model, User
+from .base import PermissionsRegistry, Model, User, AnonymousUser
 
 
 filters_called = set()
@@ -61,4 +61,19 @@ class TestTemplateTags(TestCase):
         self.assertNotIn('can_do', filters_called)
         self.assertNotIn('can_do_with_model', filters_called)
         self.assertNotIn('can_do', result)
+        self.assertNotIn('can_do_with_model', result)
+
+    def test_check_is_short_circuited_for_anonymous_users(self):
+        user = AnonymousUser()
+        context = Context({'user': user, 'instance': Model()})
+        result = self.template.render(context)
+        self.assertNotIn('can_do_with_model', filters_called)
+        self.assertNotIn('can_do_with_model', result)
+
+    def test_check_is_not_short_circuited_when_allow_anonymous_is_set(self):
+        self.registry.register(can_do, allow_anonymous=True, replace=True)
+        user = AnonymousUser()
+        context = Context({'user': user, 'instance': Model()})
+        result = self.template.render(context)
+        self.assertNotIn('can_do_with_model', filters_called)
         self.assertNotIn('can_do_with_model', result)
