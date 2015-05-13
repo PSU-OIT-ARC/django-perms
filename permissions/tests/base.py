@@ -18,6 +18,22 @@ class Model:
             setattr(self, k, v)
 
 
+class User(Model):
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault('permissions', [])
+        super(User, self).__init__(**kwargs)
+
+    def is_anonymous(self):
+        return False
+
+
+class AnonymousUser(User):
+
+    def is_anonymous(self):
+        return True
+
+
 class TestCase(BaseTestCase):
 
     def setUp(self):
