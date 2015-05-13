@@ -2,9 +2,7 @@ from django.test import TestCase
 
 from django.template import Context, Template
 
-from permissions import PermissionsRegistry
-
-from .base import Model, User
+from .base import PermissionsRegistry, Model, User
 
 
 def can_do(user):
