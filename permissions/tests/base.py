@@ -7,6 +7,9 @@ from permissions import PermissionsRegistry as BasePermissionsRegistry
 
 class PermissionsRegistry(BasePermissionsRegistry):
 
+    def _get_user_model(self):
+        return User
+
     def _get_model_instance(self, model, **kwargs):
         return model(**kwargs)
 

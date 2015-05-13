@@ -5,17 +5,23 @@ from django.template import Context, Template
 from .base import PermissionsRegistry, Model, User
 
 
+filters_called = set()
+
+
 def can_do(user):
+    filters_called.add('can_do')
     return 'can_do' in user.permissions
 
 
 def can_do_with_model(user, instance):
+    filters_called.add('can_do_with_model')
     return 'can_do_with_model' in user.permissions
 
 
 class TestTemplateTags(TestCase):
 
     def setUp(self):
+        filters_called.clear()
         self.registry = PermissionsRegistry()
         self.registry.register(can_do)
         self.registry.register(can_do_with_model, model=Model)
@@ -47,4 +53,12 @@ class TestTemplateTags(TestCase):
         user = User()
         context = Context({'user': user, 'instance': Model()})
         result = self.template.render(context)
+        self.assertNotIn('can_do_with_model', result)
+
+    def test_non_user_cannot_do(self):
+        context = Context({'user': None})
+        result = self.template.render(context)
+        self.assertNotIn('can_do', filters_called)
+        self.assertNotIn('can_do_with_model', filters_called)
+        self.assertNotIn('can_do', result)
         self.assertNotIn('can_do_with_model', result)
