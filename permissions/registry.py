@@ -4,6 +4,8 @@ from collections import namedtuple
 from functools import wraps
 
 import django.conf
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -215,6 +217,10 @@ class PermissionsRegistry:
 
         @wraps(perm_func)
         def filter_func(user, instance=NO_VALUE):
+            if not isinstance(user, (self._get_user_model(), AnonymousUser)):
+                return False
+            if not allow_anonymous and user.is_anonymous():
+                return False
             test = lambda: perm_func(user) if instance is NO_VALUE else perm_func(user, instance)
             return (
                 allow_staff and user.is_staff or
@@ -413,6 +419,10 @@ class PermissionsRegistry:
         if view_name in entry.views:
             return entry
         return None
+
+    @property
+    def _get_user_model(self):
+        return get_user_model()
 
     def _get_model_instance(self, model, **kwargs):  # pragma: no cover
         return get_object_or_404(model, **kwargs)
