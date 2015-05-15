@@ -1,6 +1,6 @@
 # Change Log for django-perms
 
-## [Unreleased] - [unreleased]
+## [1.2.0] - 2015-05-15
 
 ### Deprecated
 
