@@ -9,7 +9,7 @@ django_version = '<1.7' if sys.version_info < (2, 7) else ''
 
 setup(
     name='django-perms',
-    version='1.3.0.dev0',
+    version='1.2.1',
     url='https://github.com/PSU-OIT-ARC/django-perms',
     author='Matt Johnson',
     author_email='mdj2@pdx.edu',

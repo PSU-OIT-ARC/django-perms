@@ -2,6 +2,13 @@
 
 ## [Unreleased] - [unreleased]
 
+## [1.2.1] - 2015-05-19
+
+### Fixed
+
+- `PermissionsRegistry._get_user_model()` was unintentionally decoratored with
+  `@property`.
+
 ## [1.2.0] - 2015-05-15
 
 ### Deprecated

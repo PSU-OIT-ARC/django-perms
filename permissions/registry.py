@@ -420,7 +420,6 @@ class PermissionsRegistry:
             return entry
         return None
 
-    @property
     def _get_user_model(self):
         return get_user_model()
 
