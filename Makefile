@@ -1,3 +1,5 @@
+.PHONY = all upload clean test
+
 all:
 	./setup.py sdist
 
