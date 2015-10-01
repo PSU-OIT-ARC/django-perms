@@ -7,4 +7,6 @@ upload:
 	python setup.py sdist upload
 
 clean:
-	rm -rf django_perms.egg-info dist
+	find . -name __pycache__ -type d -print0 | xargs -0 rm -r
+	find . -name "*.py[co]" -print0 | xargs -0 rm
+	rm -rf .coverage *.egg-info build dist
