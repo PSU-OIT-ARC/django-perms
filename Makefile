@@ -1,5 +1,10 @@
 .PHONY = all upload clean test
 
+init:
+	virtualenv -p python3 .env
+	.env/bin/pip install -e .[dev]
+	./runtests.py
+
 all:
 	python setup.py sdist
 
