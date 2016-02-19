@@ -14,7 +14,7 @@ setup(
     author='Matt Johnson',
     author_email='mdj2@pdx.edu',
     maintainer='Wyatt Baldwin',
-    maintainer_email='wyatt.baldwin@pdx.edu',
+    maintainer_email='wbaldwin@pdx.edu',
     description='Syntactic sugar for handling permission functions in views, templates and in code',
     packages=find_packages(),
     zip_safe=False,
