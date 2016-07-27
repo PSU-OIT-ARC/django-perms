@@ -20,6 +20,9 @@ settings.configure(
         'permissions.tests',
     ],
     MIDDLEWARE_CLASSES=[],
+    PERMISSIONS={
+        'allow_staff': False,
+    },
     ROOT_URLCONF='permissions.tests.urls',
     TEMPLATES=[{
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
