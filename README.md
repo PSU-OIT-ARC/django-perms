@@ -1,5 +1,7 @@
 # Django Perms
 
+[![Build Status](https://travis-ci.org/PSU-OIT-ARC/django-perms.svg?branch=develop)](https://travis-ci.org/PSU-OIT-ARC/django-perms)
+
 ## Install
 
 Add `'django-perms'` to `install_requires` and/or to `requirements.txt`.
