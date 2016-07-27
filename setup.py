@@ -24,8 +24,6 @@ setup(
         'dev': [
             'coverage',
             'django{version}'.format(version=django_version),
-            'django-nose',
-            'nose',
             'six',
         ],
     },

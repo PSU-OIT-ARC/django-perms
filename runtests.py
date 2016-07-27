@@ -14,13 +14,12 @@ settings.configure(
         'testserver',
     ],
     INSTALLED_APPS=[
-        'django_nose',
         'permissions',
         'permissions.tests',
     ],
     MIDDLEWARE_CLASSES=[],
     ROOT_URLCONF='permissions.tests.urls',
-    TEST_RUNNER='django_nose.NoseTestSuiteRunner'
+    TEST_RUNNER='django.test.runner.DiscoverRunner',
 )
 
 if django.VERSION[:2] >= (1, 7):
