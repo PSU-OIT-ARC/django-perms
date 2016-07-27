@@ -24,10 +24,12 @@ setup(
     description='Syntactic sugar for handling permission functions in views, templates, and code',
     packages=find_packages(),
     zip_safe=False,
+    install_requires=[
+        'six>=1.10.0',
+    ],
     extras_require={
         'dev': [
             'coverage',
-            'six',
             'django>={version},<{version}.999'.format(version=django_version),
             'flake8',
         ],
