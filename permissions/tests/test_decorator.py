@@ -32,7 +32,7 @@ class TestDecorator(TestCase):
         self.assertTrue(hasattr(decorator.registry, 'can_do_stuff'))
         self.assertIn('decorators', globals())
 
-        @decorators.can_do_stuff
+        @decorators.can_do_stuff  # noqa
         def view(request):
             pass
 
@@ -45,14 +45,14 @@ class TestDecorator(TestCase):
 
     def test_decoration_with_model(self):
 
-        @decorator.permission(model=Model, allow_anonymous=True)
+        @decorator.permission(model=Model, allow_anonymous=True)  # noqa
         def can_do_things(user, instance):
             self.assertIsInstance(instance, Model)
             return user.can_do_things
 
         self.assertTrue(hasattr(decorator.registry, 'can_do_things'))
 
-        @decorators.can_do_things
+        @decorators.can_do_things  # noqa
         def view(request, model_id):
             pass
 
@@ -69,4 +69,4 @@ class TestDecorator(TestCase):
     def test_unknown_permission(self):
         decorator.permission(lambda u: None, name='perm')
         with self.assertRaises(NoSuchPermissionError):
-            decorators.huh(lambda r: None)
+            decorators.huh(lambda r: None)  # noqa

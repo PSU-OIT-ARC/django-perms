@@ -42,4 +42,3 @@ class TestCase(BaseTestCase):
     def setUp(self):
         self.registry = PermissionsRegistry()
         self.request_factory = RequestFactory()
-

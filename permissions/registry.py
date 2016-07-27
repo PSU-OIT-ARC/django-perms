@@ -277,15 +277,7 @@ class PermissionsRegistry:
     def _make_view_decorator(self, perm_name, perm_func, model, allow_staff, allow_superuser,
                              allow_anonymous, unauthenticated_handler, request_types):
 
-        # Putting this import here is a hack-around for testing. Merely
-        # importing login_required causes django.conf.settings to be
-        # accessed in some other module, which causes
-        # ImproperlyConfigured to be raised during the import phase of
-        # test discovery.
-        from django.contrib.auth.decorators import login_required
-
         def view_decorator(view=None, field='pk'):
-
             if view is None:
                 return lambda view_: view_decorator(view_, field)
             elif not callable(view):
