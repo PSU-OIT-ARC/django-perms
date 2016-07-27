@@ -5,7 +5,6 @@ from functools import wraps
 
 import django.conf
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -230,7 +229,7 @@ class PermissionsRegistry:
 
         @wraps(perm_func)
         def filter_func(user, instance=NO_VALUE):
-            if not isinstance(user, (self._get_user_model(), AnonymousUser)):
+            if not isinstance(user, (self._get_user_model(), self._get_anonymous_user_model())):
                 return False
             if not allow_anonymous and user.is_anonymous():
                 return False
@@ -427,6 +426,10 @@ class PermissionsRegistry:
 
     def _get_user_model(self):
         return get_user_model()
+
+    def _get_anonymous_user_model(self):
+        from django.contrib.auth.models import AnonymousUser
+        return AnonymousUser
 
     def _get_model_instance(self, model, **kwargs):  # pragma: no cover
         return get_object_or_404(model, **kwargs)

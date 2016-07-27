@@ -14,11 +14,17 @@ settings.configure(
         'testserver',
     ],
     INSTALLED_APPS=[
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
         'permissions',
         'permissions.tests',
     ],
     MIDDLEWARE_CLASSES=[],
     ROOT_URLCONF='permissions.tests.urls',
+    TEMPLATES=[{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+    }],
     TEST_RUNNER='django.test.runner.DiscoverRunner',
 )
 
