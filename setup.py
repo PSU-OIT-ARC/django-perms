@@ -32,6 +32,7 @@ setup(
             'coverage',
             'django>={version},<{version}.999'.format(version=django_version),
             'flake8',
+            'tox',
         ],
     },
     classifiers=[
