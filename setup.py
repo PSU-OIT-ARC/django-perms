@@ -3,10 +3,14 @@ import sys
 from setuptools import setup, find_packages
 
 
-django_version = '<1.7' if sys.version_info < (2, 7) else ''
 with open('VERSION') as version_fp:
     VERSION = version_fp.read().strip()
 
+
+if sys.version_info[:2] < (3, 4):
+    django_version = '1.8'
+else:
+    django_version = '1.9'
 
 
 setup(
@@ -23,14 +27,13 @@ setup(
     extras_require={
         'dev': [
             'coverage',
-            'django{version}'.format(version=django_version),
             'six',
+            'django>={version},<{version}.999'.format(version=django_version),
         ],
     },
     classifiers=[
         'Framework :: Django',
         'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
