@@ -4,12 +4,14 @@ from setuptools import setup, find_packages
 
 
 django_version = '<1.7' if sys.version_info < (2, 7) else ''
+with open('VERSION') as version_fp:
+    VERSION = version_fp.read().strip()
 
 
 
 setup(
     name='django-perms',
-    version='1.2.1',
+    version=VERSION,
     url='https://github.com/PSU-OIT-ARC/django-perms',
     author='Matt Johnson',
     author_email='mdj2@pdx.edu',
