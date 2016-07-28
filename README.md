@@ -2,6 +2,16 @@
 
 [![Build Status](https://travis-ci.org/PSU-OIT-ARC/django-perms.svg?branch=develop)](https://travis-ci.org/PSU-OIT-ARC/django-perms)
 
+`django-perms` provides a simple way to add authorization checks to
+Django views. It takes a different approach to authorization compared to
+packages like `django-guardian`. `django-perms` doesn't store any
+permission state in the database. Instead, you define functions that
+return `True` or `False` depending on whether the user is authorized to
+do something. You are free to implement these functions however you see
+fit. This allows for coarse permissions such as `user.is_staff` and more
+fine-grained permissions based on, e.g., whether a user has access to
+a specific model instance.
+
 ## Install
 
 Add `'django-perms'` to `install_requires` and/or to `requirements.txt`.
