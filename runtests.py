@@ -14,13 +14,21 @@ settings.configure(
         'testserver',
     ],
     INSTALLED_APPS=[
-        'django_nose',
+        'django.contrib.auth',
+        'django.contrib.contenttypes',
         'permissions',
         'permissions.tests',
     ],
     MIDDLEWARE_CLASSES=[],
+    PERMISSIONS={
+        'allow_staff': False,
+    },
     ROOT_URLCONF='permissions.tests.urls',
-    TEST_RUNNER='django_nose.NoseTestSuiteRunner'
+    TEMPLATES=[{
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+    }],
+    TEST_RUNNER='django.test.runner.DiscoverRunner',
 )
 
 if django.VERSION[:2] >= (1, 7):

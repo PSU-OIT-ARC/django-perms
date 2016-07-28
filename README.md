@@ -1,101 +1,219 @@
 # Django Perms
 
+[![Build Status](https://travis-ci.org/PSU-OIT-ARC/django-perms.svg?branch=develop)](https://travis-ci.org/PSU-OIT-ARC/django-perms)
+
+`django-perms` provides a simple way to add authorization checks to
+Django views. It takes a different approach to authorization compared to
+packages like `django-guardian`. `django-perms` doesn't store any
+permission state in the database. Instead, you define functions that
+return `True` or `False` depending on whether the user is authorized to
+do something. You are free to implement these functions however you see
+fit. This allows for coarse permissions such as `user.is_staff` and more
+fine-grained permissions based on, e.g., whether a user has access to
+a specific model instance.
+
 ## Install
 
-`pip install django-perms`
+Add `'django-perms'` to `install_requires` and/or to `requirements.txt`.
 
-Add 'permissions' to your installed apps.
+Or install it directly with pip:
+
+    pip install django-perms
+
+If you want to use permissions template filters, add `'permissions'` to
+your project's `INSTALLED_APPS` setting.
 
 ## Usage
 
-Consider the following functions (in widgets/perms.py):
+Create a module named `perms` in the top level of your Django project.
+In this module, create a permissions registry:
 
-```python
-def can_create_widget(user):
-    if user.is_admin:
-        return True
+    # project/package/perms.py
+    from permissions import PermissionsRegistry
+    permissions = PermissionsRegistry()
 
-    if Widget.objects.filter(created_by=user).count() <= MAX_WIDGETS_PER_USER:
-        return True
+NOTE: You can create the permissions registry anywhere; creating it in
+a module name `perms` is just a convention.
 
-def can_edit_widget(user, widget):
-    if user.is_admin:
-        return True
+If you have some permissions that will be useful across more than one of
+your Django apps, the top level `perms` module is a good place to define
+them:
 
-    if user.pk == widget.created_by_id:
-        return True
-```
+    @permissions.register
+    def is_staff(user):
+        return user.is_staff
 
-All permissions functions *must* take a User model object as a first argument. The latter permission function takes a second argument, some kind of object to check permissions against.
+The `is_staff` permission can be applied to a view like so:
 
-To register these as permission functions, use the `@permission` decorator:
+    from package.perms import permissions
 
-```python
-...
-from permissions import permission
+    @permissions.required('is_staff')
+    def some_view_only_accessible_by_staff(request):
+        pass  # Do important stuff
 
-@permission
-def can_create_widget(user):
-    ...
+Note that all permissions functions *must* take a User model object as
+their first argument.
 
-@permission(model=Widget)
-def can_edit_widget(user, widget):
-    ...
+App-specific permissions are typically defined in a module named `perms`
+in the app's package. For example, let's say you have a `widgets` app in
+your project, then you might define some permissions like so:
 
-@permission(model=Widget, allow_anonymous=True)
-def can_view_widget(user, widget):
-    if user.is_anonymous():
-        ... allow access to public widgets
-    else:
-        ... allow access to public widgets and user's widgets
-```
+    # project/package/widgets/perms.py
+    from package.perms import permissions
 
-Permission functions that take a single argument (the user object), can use the simple `@permission` decorator. Permission functions that take a second argument *must* specify the model class that the second argument to the permission function is expected to be.
+    @permissions.register
+    def can_create_widget(user):
+        if user.is_staff:
+            return True
+        num_widgets = Widget.objects.filter(created_by=user).count()
+        return num_widgets <= MAX_WIDGETS
 
-Now in widgets/views.py, you can do something like:
+    @permissions.register(model=Widget)
+    def can_edit_widget(user, widget):
+        if user.is_staff:
+            return True
+        return user == widget.owner
 
-```python
-# the `decorators` attribute on the widgets/perms.py module was added at runtime by the permissions app
-from .perms import decorators
+    @permissions.register(model=Widget, allow_anonymous=True)
+    def can_view_widget(user, widget):
+        if user.is_staff:
+            return True
+        if user.is_anonymous():
+            return widget.is_public
+        return user == widget.owner
 
-@decorators.can_create_widget
-def create(request):
-    return HttpResponse("Create a widget!")
+Those widget permissions can be applied to your widget views like this:
 
-@decorators.can_edit_widget
-def edit(request, widget_id):
-    widget = get_object_or_404(Widget, pk=widget_id)
-    return HttpResponse("You can edit %s" % str(widget))
+    # project/package/widgets/views.py
+    from django.http import HttpResponse
+    from package.perms import permissions
+    from .models import Widget
 
-# if you want to lookup the widget by its name field instead of the default,
-# the pk, add a field argument to the decorator
-@decorators.can_edit_widget(field="name")
-def edit(request, name):
-    widget = get_object_or_404(Widget, name=name)
-    return HttpResponse("You can edit %s" % str(widget))
-```
+    @permissions.require('can_create_widget')
+    def create_widget(request):
+        # Create a widget here
+        return HttpResponse('Widget created')
 
-In your templates, you can do:
+    @permissions.require('can_edit_widget', model=Widget)
+    def edit_widget(request, widget_id):
+        widget = get_object_or_404(Widget, pk=widget_id)
+        # Edit the widget here
+        return HttpResponse('Edited %s' % widget)
 
-```django
-{% load permissions %}
+    # If you want to look up widgets by a field other than the primary
+    # key field, you can specify the `field` option:
+    @permissions.require('can_edit_widget', field='name')
+    def edit_widget(request, name):
+        widget = get_object_or_404(Widget, name=name)
+        return HttpResponse('Edited %s' % widget)
 
-{% if user|can_create_widget %}
-    You can create widgets!
-{% endif %}
+If you're using class-based views, you can apply a permission to a class
+or to a method:
 
-{% if user|can_edit_widget:widget_object %}
-    You can edit this widget!
-{% endif %}
-```
+    @permissions.require('xyz')
+    class MyView(View):
 
+        # All methods require the 'xyz' permission.
 
-## How it Works
+        def get(request):
+            pass
 
-When you register a permission function using `@permission`, a Django template filter is created based on the function. It also creates a simple decorator, which can be used on a Django view. The decorator takes the `request.user` object, and passes it to the permission function. If the permission function returns a truthy value, the Django view is loaded. Otherwise a PermissionDenied exception is raised.
+        def post(request):
+            pass
 
-In the more complicated `@permission(model=Widget)` case, a Django template filter is created. It also creates a decorator which can be used on a Django view. **This decorator assumes the second argument to the Django view is the PK of the model class you specified.** It then performs a model lookup using that PK, and passes the `request.user` object, and the model object to the permission function. If the model object DoesNotExist, a 404 is raised.
+    class MyOtherView(View):
 
-When a PermissionDenied error is raised, the request object gets a `permission_name` attribute containing the permission function's name.
+        # Only the post method requires the 'xyz' permission. Other
+        # methods are unprotected.
 
-Anonymous users will be sent to the login page unless `allow_anonymous=True` is passed to `@permission`.
+        def get(request):
+            pass
+
+        @permissions.require('xyz')
+        def post(request):
+            pass
+
+When a permission is registered, a corresponding template filter is also
+created. Given the permissions registered above, you can do this in your
+templates:
+
+    {% load permissions %}
+
+    {% if user|is_staff %}
+        Hello, staff user.
+    {% endif %}
+
+    {% if user|can_create_widget %}
+        You can create widgets!
+    {% endif %}
+
+    {% if user|can_edit_widget:widget %}
+        You can edit this widget!
+    {% endif %}
+
+## Permissions Registered with a Model
+
+When registering a permission that operates on a model, it's assumed
+that the second argument of any view function requiring that permission
+is the model lookup field (typically a primary key):
+
+    @permissions.register(model=Fruit)
+    def can_eat_fruit(user, fruit):
+        return not user.is_allergic_to(fruit)
+
+    @permissions.require('can_eat_fruit')
+    def consume_fruit_view(request, fruit_id):
+        pass # Consume the fruit if allowed
+
+The `fruit_id` passed to the `consume_fruit_view` will be used by the
+permissions machinery to load a `Fruit` object, which will be passed
+into the `can_eat_fruit` permission function.
+
+When using class-based views, the `self` arg is skipped when looking for
+the lookup field.
+
+## Allowing Staff and/or Superusers Access to All Views by Default
+
+If you find yourself writing `if user.is_staff: return True` at the top
+of most or all your permission functions, you can allow staff permission
+to access all views by default:
+
+    permissions = PermissionsRegistry(is_staff=True)
+
+If you have a view that shouldn't be accessible to staff for some
+reason, you can override the default `is_staff` setting on a per-
+permission basis:
+
+    @permissions.register(is_staff=False)
+    def is_superuser(user):
+        return user.is_superuser
+
+There's an analogous `is_superuser` option.
+
+## Anonymous Users
+
+By default, anonymous users will be redirected to the login page. In
+some cases, it may make sense to give anonymous users a chance to access
+certain views.
+
+For example, if you have an `Article` model with an `is_published`
+field, you may want to allow anonymous users to access articles that
+have been published. To allow this, you'd define and require a
+permission like this:
+
+    # perms.py
+    @permissions.register(model=Article, allow_anonymous=True)
+    def can_view_article(user, article):
+        if article.is_published:
+            return True
+        if user.is_anonymous():
+            return False  # Redirect to login page
+        return user == article.owner
+
+    # views.py
+    @permissions.require('can_view_article')
+    def article_view(request, article_id):
+        pass  # Show article
+
+If the permission check fails for an anonymous user, they will be
+redirected to the login page.

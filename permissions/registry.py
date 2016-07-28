@@ -5,7 +5,6 @@ from functools import wraps
 
 import django.conf
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -13,6 +12,13 @@ try:
     from django.utils.module_loading import import_string
 except ImportError:
     from django.utils.module_loading import import_by_path as import_string
+
+try:
+    import rest_framework
+except ImportError:
+    rest_framework = None
+else:
+    from rest_framework.request import Request as DRFRequest
 
 from .exc import DuplicatePermissionError, NoSuchPermissionError, PermissionsError
 from .meta import PermissionsMeta
@@ -36,7 +42,11 @@ DEFAULT_SETTINGS = {
     'allow_superuser': False,
     'allow_anonymous': False,
     'unauthenticated_handler': None,
-    'request_types': (),  # django.http.HttpRequest is always included
+
+    # django.http.HttpRequest is always included.
+    # rest_framework.request.Request is always included when DRF is
+    # installed.
+    'request_types': (),
 }
 
 
@@ -74,14 +84,14 @@ class PermissionsRegistry:
           [Default behavior is to redirect to the login page]
 
         - request_types: A list of the types of request objects used by
-          your project. In a typical Django project, this won't need to
-          be set, but if you're using, e.g., Django REST Framework,
-          you'll need to add its request class to this list.
-          [django.http.HttpRequest]
+          your project. In a typical Django project, including projects
+          that use Django REST Framework, this won't need to be set.
+          [(django.http.HttpRequest, rest_framework.request.Request)]
 
-          Note: You never need to add Django's request class to the
-          ``request_types`` list; it will be added automatically if it's
-          not present.
+          .. note:: You never need to add Django's request class to the
+              ``request_types`` list; it will be added automatically if
+              it's not present. Likewise for DRF's request class, except
+              that it will only be added if DRF is installed.
 
         If an option's value isn't passed to the constructor, it will
         be pulled from your project's settings or fall back to the
@@ -159,8 +169,10 @@ class PermissionsRegistry:
 
         request_types = _default(request_types, settings['request_types'])
         request_types = tuple(import_string(t) for t in request_types if isinstance(t, str))
+        if rest_framework and DRFRequest not in request_types:
+            request_types = (DRFRequest,) + request_types
         if HttpRequest not in request_types:
-            request_types = (HttpRequest,) + (request_types or ())
+            request_types = (HttpRequest,) + request_types
         self._request_types = request_types
 
     @property
@@ -217,7 +229,7 @@ class PermissionsRegistry:
 
         @wraps(perm_func)
         def filter_func(user, instance=NO_VALUE):
-            if not isinstance(user, (self._get_user_model(), AnonymousUser)):
+            if not isinstance(user, (self._get_user_model(), self._get_anonymous_user_model())):
                 return False
             if not allow_anonymous and user.is_anonymous():
                 return False
@@ -277,15 +289,7 @@ class PermissionsRegistry:
     def _make_view_decorator(self, perm_name, perm_func, model, allow_staff, allow_superuser,
                              allow_anonymous, unauthenticated_handler, request_types):
 
-        # Putting this import here is a hack-around for testing. Merely
-        # importing login_required causes django.conf.settings to be
-        # accessed in some other module, which causes
-        # ImproperlyConfigured to be raised during the import phase of
-        # test discovery.
-        from django.contrib.auth.decorators import login_required
-
         def view_decorator(view=None, field='pk'):
-
             if view is None:
                 return lambda view_: view_decorator(view_, field)
             elif not callable(view):
@@ -422,6 +426,10 @@ class PermissionsRegistry:
 
     def _get_user_model(self):
         return get_user_model()
+
+    def _get_anonymous_user_model(self):
+        from django.contrib.auth.models import AnonymousUser
+        return AnonymousUser
 
     def _get_model_instance(self, model, **kwargs):  # pragma: no cover
         return get_object_or_404(model, **kwargs)
