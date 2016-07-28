@@ -1,8 +1,30 @@
 # Change Log for django-perms
 
-## 1.3.0 - unreleased
+## 1.3.0 - 2016-07-27
 
-In progress...
+### Functional Changes
+
+- Added Django REST Framework's request class to the default list of
+  expected request types. DRF seems popular enough to warrant this.
+
+### Other Changes
+
+- Added a description of the project to the README.
+- Updated the README to document the preferred style of registering
+  permissions via an explicitly-created permissions registry.
+- Added a new & improved Makefile.
+- Added change log file to package manifest.
+- Cleaned up change log.
+- Added support for Python 3.5.
+- Added tox dependency and configuration for testing multiple Python and
+  Django version combinations.
+- Added Python 3.4 to list of versions to test under Travis CI.
+- Added linting when running tests (via flake8).
+- Cleaned up some lint found by flake8.
+- Fixed a few things, mostly test-related, to support Django 1.9.
+- Removed nose and django_nose dependencies; Django's `DiscoverRunner`
+  is used to discover and run tests instead.
+- Dropped support for Python 2.6.
 
 ## 1.2.1 - 2015-05-19
 
