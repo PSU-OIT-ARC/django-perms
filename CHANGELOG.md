@@ -1,5 +1,9 @@
 # Change Log for django-perms
 
+## 1.4.0 - unreleased
+
+In progress...
+
 ## 1.3.0 - 2016-07-27
 
 ### Functional Changes
