@@ -1,6 +1,4 @@
-from django.test import TestCase as BaseTestCase
-
-from django.test import RequestFactory
+from django.test import RequestFactory, TestCase as BaseTestCase
 
 from permissions import PermissionsRegistry as BasePermissionsRegistry
 
