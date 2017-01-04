@@ -1,10 +1,9 @@
-from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import PermissionDenied
 
 from permissions import decorator, permission
 from permissions.exc import DuplicatePermissionError, NoSuchPermissionError
 
-from .base import Model, TestCase
+from .base import AnonymousUser, Model, TestCase, User
 
 
 class TestDecorator(TestCase):

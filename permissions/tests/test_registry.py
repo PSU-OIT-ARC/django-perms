@@ -1,11 +1,9 @@
-from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import PermissionDenied
-from django.views.generic import View
 
 from permissions import PermissionsRegistry
 from permissions.exc import NoSuchPermissionError, PermissionsError
 
-from .base import Model, TestCase
+from .base import AnonymousUser, Model, TestCase, User, View
 
 
 class TestRegistry(TestCase):
@@ -62,21 +60,17 @@ class TestRegistry(TestCase):
             return user.can_do_things
 
         @self.registry.require('can_do_things')
-        class View(object):
+        class TestView(View):
 
-            def dispatch(self, req):
-                return getattr(self, req.method.lower())(req)
+            pass
 
-            def get(self, req):
-                pass
-
-        self.assertEqual(View.dispatch.__name__, 'dispatch')
+        self.assertEqual(TestView.dispatch.__name__, 'dispatch')
 
         request = self.request_factory.get('/things')
         request.user = User()
 
         request.user.can_do_things = True
-        view = View()
+        view = TestView()
         view.dispatch(request)
 
         request.user.can_do_things = False
@@ -89,23 +83,19 @@ class TestRegistry(TestCase):
             return user.can_do_stuff and instance is not None
 
         @self.registry.require('can_do_stuff')
-        class View(object):
+        class TestView(View):
 
-            def dispatch(self, req, model_id, *args, **kwargs):
-                return getattr(self, req.method.lower())(req, model_id, *args, **kwargs)
-
-            def get(self, req, model_id):
-                return model_id
+            pass
 
         request = self.request_factory.get('/stuff/1')
         request.user = User()
 
         request.user.can_do_stuff = True
-        view = View()
+        view = TestView()
         view.dispatch(request, 1)
 
         request.user.can_do_stuff = False
-        self.assertRaises(PermissionDenied, view.dispatch, request, model_id=1)
+        self.assertRaises(PermissionDenied, view.dispatch, request, 1)
 
     def test_view_args_are_passed_through_to_perm_func(self):
 
@@ -205,8 +195,8 @@ class TestRegistry(TestCase):
         # try the same thing with a CBV
         @self.registry.require('perm')
         class AView(View):
-            def get(self, request):
-                pass
+
+            pass
 
         entry = self.registry.entry_for_view(AView, 'perm')
         self.assertIsNotNone(entry)
@@ -214,6 +204,7 @@ class TestRegistry(TestCase):
 
         # same thing with the permission on a CBV method
         class AnotherView(View):
+
             @self.registry.require('perm')
             def get(self, request):
                 pass
