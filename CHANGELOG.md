@@ -1,6 +1,6 @@
 # Change Log for django-perms
 
-## 1.5.0 - unreleased
+## 2.0.0 - 2017-01-05
 
 - Removed the old method of registering permissions into a global
   registry via the `permission` decorator. This method injected
