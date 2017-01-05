@@ -1,8 +1,21 @@
 # Change Log for django-perms
 
-## 1.4.0 - unreleased
+## 1.4.0 - 2017-01-04
 
-In progress...
+- When a function is registered as a permission function via
+  `PermissionsRegistry.register()`, a wrapped version of the function is
+  now returned that takes the `allow_anonymous`, `allow_staff`, and
+  `allow_superuser` options into account. This wrapped version is the
+  same function that gets registered as a template filter.
+
+  Previously, when a registered permission function was called directly
+  (e.g., in view code), those options would be silently ignored. Now,
+  using a permission as a view decorator or a template filter or by
+  calling it directly will yield the same results.
+
+- In the wrapped versions of permission functions that are returned from
+  `PermissionsRegistry.register()`, only return `False` when the `user`
+  arg is `None` and not whenever it's not of the "correct" type.
 
 ## 1.3.0 - 2016-07-27
 
