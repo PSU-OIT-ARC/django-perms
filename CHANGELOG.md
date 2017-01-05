@@ -1,5 +1,9 @@
 # Change Log for django-perms
 
+## 1.5.0 - unreleased
+
+In progress...
+
 ## 1.4.0 - 2017-01-04
 
 - When a function is registered as a permission function via
