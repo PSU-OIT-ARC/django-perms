@@ -229,7 +229,7 @@ class PermissionsRegistry:
 
         @wraps(perm_func)
         def wrapped_func(user, instance=NO_VALUE):
-            if not isinstance(user, (self._get_user_model(), self._get_anonymous_user_model())):
+            if user is None:
                 return False
             if not allow_anonymous and user.is_anonymous():
                 return False
