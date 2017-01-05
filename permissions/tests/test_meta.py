@@ -1,4 +1,3 @@
-from django.contrib.auth.models import User
 from django.core.exceptions import PermissionDenied
 
 import six
@@ -6,7 +5,7 @@ import six
 from ..exc import PermissionsError
 from ..meta import PermissionsMeta
 
-from .base import Model, TestCase
+from .base import Model, TestCase, User, View
 
 
 class TestMeta(TestCase):
@@ -18,8 +17,8 @@ class TestMeta(TestCase):
         def can_view(user, instance):
             return user.can_view
 
-    def _do_view_tests(self, View):
-        view = View()
+    def _do_view_tests(self, view_class):
+        view = view_class()
         request = self.request_factory.get('/things/1')
         request.user = User()
         request.user.can_view = False
@@ -30,21 +29,18 @@ class TestMeta(TestCase):
     def test_registry_metaclass(self):
 
         @six.add_metaclass(self.registry.metaclass)
-        class View(object):
+        class TestView(View):
 
             permissions = {
                 'get': 'can_view',
             }
 
-            def get(self, request, model_id):
-                pass
-
-        self._do_view_tests(View)
+        self._do_view_tests(TestView)
 
     def test_specify_permissions_registry_on_view_class(self):
 
         @six.add_metaclass(PermissionsMeta)
-        class View(object):
+        class TestView(View):
 
             permissions_registry = self.registry
 
@@ -52,20 +48,14 @@ class TestMeta(TestCase):
                 'get': 'can_view',
             }
 
-            def get(self, request, model_id):
-                pass
-
-        self._do_view_tests(View)
+        self._do_view_tests(TestView)
 
     def test_no_registry(self):
 
         with self.assertRaises(PermissionsError):
             @six.add_metaclass(PermissionsMeta)
-            class View(object):
+            class TestView(View):
 
                 permissions = {
                     'get': 'can_view',
                 }
-
-                def get(self, request, model_id):
-                    pass

@@ -1,6 +1,4 @@
-from django.test import TestCase as BaseTestCase
-
-from django.test import RequestFactory
+from django.test import RequestFactory, TestCase as BaseTestCase
 
 from permissions import PermissionsRegistry as BasePermissionsRegistry
 
@@ -9,6 +7,9 @@ class PermissionsRegistry(BasePermissionsRegistry):
 
     def _get_user_model(self):
         return User
+
+    def _get_anonymous_user_model(self):
+        return AnonymousUser
 
     def _get_model_instance(self, model, **kwargs):
         return model(**kwargs)
@@ -30,11 +31,23 @@ class User(Model):
     def is_anonymous(self):
         return False
 
+    def is_authenticated(self):
+        return False
+
 
 class AnonymousUser(User):
 
     def is_anonymous(self):
         return True
+
+
+class View(object):
+
+    def dispatch(self, request, *args, **kwargs):
+        return getattr(self, request.method.lower())(request, *args, **kwargs)
+
+    def get(self, request, *args, **kwargs):
+        pass
 
 
 class TestCase(BaseTestCase):

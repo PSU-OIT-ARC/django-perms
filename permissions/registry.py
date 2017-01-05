@@ -228,8 +228,8 @@ class PermissionsRegistry:
         self._registry[name] = entry
 
         @wraps(perm_func)
-        def filter_func(user, instance=NO_VALUE):
-            if not isinstance(user, (self._get_user_model(), self._get_anonymous_user_model())):
+        def wrapped_func(user, instance=NO_VALUE):
+            if user is None:
                 return False
             if not allow_anonymous and user.is_anonymous():
                 return False
@@ -240,10 +240,10 @@ class PermissionsRegistry:
                 test()
             )
 
-        register.filter(name, filter_func)
+        register.filter(name, wrapped_func)
 
         log.debug('Registered permission: {0}'.format(name))
-        return entry if _return_entry else perm_func
+        return entry if _return_entry else wrapped_func
 
     __call__ = register
 
