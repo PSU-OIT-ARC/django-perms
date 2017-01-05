@@ -180,9 +180,9 @@ class TestRegistry(TestCase):
 
     def test_ensure_view_perms(self):
 
-        @self.registry.register
-        def perm(user):
-            pass
+        perm_func = lambda user: True
+        perm_func.__name__ = 'perm'
+        self.registry.register(perm_func)
 
         @self.registry.require('perm')
         def view(request):
@@ -190,7 +190,7 @@ class TestRegistry(TestCase):
 
         entry = self.registry.entry_for_view(view, 'perm')
         self.assertIsNotNone(entry)
-        self.assertIs(entry.perm_func, perm)
+        self.assertIs(entry.perm_func, perm_func)
 
         # try the same thing with a CBV
         @self.registry.require('perm')
@@ -200,7 +200,7 @@ class TestRegistry(TestCase):
 
         entry = self.registry.entry_for_view(AView, 'perm')
         self.assertIsNotNone(entry)
-        self.assertIs(entry.perm_func, perm)
+        self.assertIs(entry.perm_func, perm_func)
 
         # same thing with the permission on a CBV method
         class AnotherView(View):
@@ -211,4 +211,19 @@ class TestRegistry(TestCase):
 
         entry = self.registry.entry_for_view(AnotherView.get, 'perm')
         self.assertIsNotNone(entry)
-        self.assertIs(entry.perm_func, perm)
+        self.assertIs(entry.perm_func, perm_func)
+
+    def test_ensure_direct_call_respects_allow_staff_allow_superuser(self):
+
+        @self.registry.register(allow_staff=True, allow_superuser=True)
+        def perm(user):
+            return 'perm'
+
+        user = User(is_staff=True, is_superuser=False)
+        self.assertTrue(perm(user))
+
+        user = User(is_staff=False, is_superuser=True)
+        self.assertTrue(perm(user))
+
+        user = User(is_staff=False, is_superuser=False)
+        self.assertEqual(perm(user), 'perm')
