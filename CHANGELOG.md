@@ -1,5 +1,9 @@
 # Change Log for django-perms
 
+## 2.1.0 - unreleased
+
+In progress...
+
 ## 2.0.0 - 2017-01-05
 
 - Removed the old method of registering permissions into a global
