@@ -54,7 +54,7 @@ clean-sdist:
 upload: sdist
 	scp $(sdist) $(upload_path)
 upload-to-pypi:
-	python setup.py sdist register upload
+	python setup.py sdist upload
 
 clean: clean-pyc
 clean-all: clean-install clean-pyc clean-sdist tox-clean clean-venv
