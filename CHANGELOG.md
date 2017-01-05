@@ -1,5 +1,15 @@
 # Change Log for django-perms
 
+## 2.0.0 - 2017-01-05
+
+- Removed the old method of registering permissions into a global
+  registry via the `permission` decorator. This method injected
+  a `decorator` global into modules where the `permission` decorator was
+  used to register permission functions. `decorator` would then be
+  imported into view modules to require permissions on views. That was
+  a less-than-ideal way to do things and has been deprecated for some
+  time.
+
 ## 1.4.0 - 2017-01-04
 
 - When a function is registered as a permission function via
